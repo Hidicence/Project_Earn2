@@ -43,6 +43,7 @@ function initializeAppAfterLogin() {
     // 渲染界面
     renderProjectsTable();
     updateStatistics();
+    bindMonthAddAndDelete();
     
     console.log('應用初始化完成');
 }
@@ -70,6 +71,7 @@ function initializeLocalMode() {
     setupEventListeners();
     renderProjectsTable();
     updateStatistics();
+    bindMonthAddAndDelete();
     
     console.log('本地模式初始化完成');
 }
@@ -93,7 +95,7 @@ function initializeMonthTabs() {
         }
         tab.innerHTML = `
             <span>${monthText}</span>
-            <button class="delete-month" onclick="deleteMonth('${monthValue}')" title="刪除月份">
+            <button class="delete-month" data-month="${monthValue}" title="刪除月份">
                 <i class="fas fa-times"></i>
             </button>
         `;
@@ -105,6 +107,15 @@ function initializeMonthTabs() {
         
         container.appendChild(tab);
     }
+
+    // 綁定刪除月份按鈕
+    container.querySelectorAll('.delete-month').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const m = e.currentTarget.getAttribute('data-month');
+            deleteMonth(m);
+        });
+    });
 }
 
 // 選擇月份
@@ -176,13 +187,13 @@ function setupEventListeners() {
         console.log('未找到新增專案按鈕');
     }
     
-    // 新增支出類型按鈕
+    // 新增支出類型按鈕 → 改為開啟管理器
     const addExpenseTypeBtn = document.getElementById('addExpenseTypeBtn');
     if (addExpenseTypeBtn) {
         console.log('綁定新增支出類型按鈕');
         addExpenseTypeBtn.addEventListener('click', function() {
             console.log('新增支出類型按鈕被點擊');
-            addExpenseType();
+            openExpenseTypesManager();
         });
     } else {
         console.log('未找到新增支出類型按鈕');
@@ -214,6 +225,36 @@ function setupEventListeners() {
             e.preventDefault();
             submitNewProject();
         });
+    }
+
+    // 支出類型 Modal 內的新增與關閉
+    const expenseTypesModal = document.getElementById('expenseTypesModal');
+    if (expenseTypesModal && !expenseTypesModal.hasAttribute('data-listener')) {
+        expenseTypesModal.addEventListener('click', function(e) {
+            if (e.target.classList.contains('close')) {
+                expenseTypesModal.style.display = 'none';
+            }
+        });
+        expenseTypesModal.setAttribute('data-listener', 'true');
+    }
+    const confirmAddExpenseTypeBtn = document.getElementById('confirmAddExpenseTypeBtn');
+    if (confirmAddExpenseTypeBtn && !confirmAddExpenseTypeBtn.hasAttribute('data-listener')) {
+        confirmAddExpenseTypeBtn.addEventListener('click', function() {
+            const input = document.getElementById('newExpenseTypeInput');
+            const val = (input.value || '').trim();
+            if (!val) return;
+            if (!expenseTypes.includes(val)) {
+                expenseTypes.push(val);
+                saveExpenseTypes();
+                renderExpenseTypesList();
+                updateTableHeaders();
+                input.value = '';
+                showToast('支出類型新增成功！');
+            } else {
+                alert('此支出類型已存在');
+            }
+        });
+        confirmAddExpenseTypeBtn.setAttribute('data-listener', 'true');
     }
 }
 
@@ -618,6 +659,76 @@ function showTab(tabName) {
     console.log('showTab 函數在新版本中不需要，使用單一表格界面');
 }
 
+// 綁定新增月份與刪除月份
+function bindMonthAddAndDelete() {
+    const addMonthBtn = document.getElementById('addMonthBtn');
+    if (addMonthBtn && !addMonthBtn.hasAttribute('data-listener')) {
+        addMonthBtn.addEventListener('click', function() {
+            const cur = new Date(window.currentMonth + '-01T00:00:00');
+            const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+            const monthValue = next.toISOString().slice(0, 7);
+            window.currentMonth = monthValue;
+            initializeMonthTabs();
+            loadProjects();
+            loadMonthlyExpenses();
+            renderProjectsTable();
+            updateStatistics();
+        });
+        addMonthBtn.setAttribute('data-listener', 'true');
+    }
+}
+
+// 刪除月份（清除該月資料）
+function deleteMonth(month) {
+    if (!month) return;
+    if (!confirm(`確定清除 ${month} 的資料嗎？`)) return;
+    localStorage.removeItem(`projects_${month}`);
+    localStorage.removeItem(`monthlyExpenses_${month}`);
+    if (window.currentMonth === month) {
+        window.currentMonth = new Date().toISOString().slice(0, 7);
+    }
+    initializeMonthTabs();
+    loadProjects();
+    loadMonthlyExpenses();
+    renderProjectsTable();
+    updateStatistics();
+    showToast('月份資料已清除');
+}
+
+// 打開支出類型管理器
+function openExpenseTypesManager() {
+    renderExpenseTypesList();
+    const modal = document.getElementById('expenseTypesModal');
+    if (modal) modal.style.display = 'block';
+}
+
+// 渲染支出類型列表（含刪除）
+function renderExpenseTypesList() {
+    const container = document.getElementById('expenseTypesList');
+    if (!container) return;
+    container.innerHTML = '';
+    expenseTypes.forEach((type, idx) => {
+        const item = document.createElement('div');
+        item.className = 'expense-type-item';
+        item.innerHTML = `
+            <span class="expense-type-name">${type}</span>
+            <div>
+                <button class="btn delete" data-index="${idx}"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        item.querySelector('.btn.delete').addEventListener('click', () => {
+            if (confirm(`確定刪除「${type}」嗎？`)) {
+                expenseTypes.splice(idx, 1);
+                saveExpenseTypes();
+                updateTableHeaders();
+                renderExpenseTypesList();
+                showToast('支出類型已刪除');
+            }
+        });
+        container.appendChild(item);
+    });
+}
+
 // 導出全域函數
 window.initializeAppAfterLogin = initializeAppAfterLogin;
 window.updateProjectExpense = updateProjectExpense;
@@ -632,4 +743,8 @@ window.exportData = exportData;
 window.addMonthlyExpense = addMonthlyExpense;
 window.loadExpenseCategoryOptions = loadExpenseCategoryOptions;
 window.showTab = showTab;
+window.bindMonthAddAndDelete = bindMonthAddAndDelete;
+window.deleteMonth = deleteMonth;
+window.openExpenseTypesManager = openExpenseTypesManager;
+window.renderExpenseTypesList = renderExpenseTypesList;
 // 不再導出本檔的 startLocalMode，避免覆蓋 auth.js 的同名函式

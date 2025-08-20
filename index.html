@@ -266,6 +266,24 @@
         </div>
     </div>
 
+    <!-- 支出類型管理 Modal -->
+    <div id="expenseTypesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>支出類型管理</h3>
+            <div class="expense-types-list" id="expenseTypesList">
+                <!-- 動態渲染支出類型列表 -->
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="newExpenseTypeInput">新增支出類型</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="newExpenseTypeInput" placeholder="輸入類型名稱">
+                    <button id="confirmAddExpenseTypeBtn" class="btn secondary"><i class="fas fa-plus"></i> 新增</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
     <script src="js/tableUI.js"></script>
