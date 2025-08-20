@@ -1,0 +1,33 @@
+{
+  "name": "project-finance-system",
+  "version": "1.0.0",
+  "description": "專案收支管理系統 - HTML版本，支持Google登入，可部署到Vercel",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve .",
+    "dev": "serve . -p 8000",
+    "build": "echo 'Pure HTML project, no build needed'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "project-management",
+    "finance",
+    "budget",
+    "expense-tracking",
+    "google-oauth",
+    "vercel"
+  ],
+  "author": "Claude AI",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "your-repository-url"
+  },
+  "homepage": "https://your-vercel-app.vercel.app"
+}
