@@ -1,6 +1,10 @@
 {
-  "version": 2,
-  "name": "project-finance-system",
+  "builds": [
+    {
+      "src": "**",
+      "use": "@vercel/static"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
