@@ -4,6 +4,8 @@ let currentMonth = new Date().toISOString().slice(0, 7);
 let expenseTypes = ['器材租賃費用', '交通費', '餐費', '雜費', '人事費', '後製費'];
 let projects = [];
 let monthlyExpenses = {};
+let currentUser = null;
+let isLocalMode = false;
 
 // 初始化應用
 function initializeAppAfterLogin() {
@@ -30,14 +32,34 @@ function initializeAppAfterLogin() {
     loadProjects();
     loadMonthlyExpenses();
     
-    // 設定事件監聽器
-    setupEventListeners();
+    // 設定事件監聽器（確保DOM完全載入）
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupEventListeners);
+    } else {
+        setupEventListeners();
+    }
     
     // 渲染界面
     renderProjectsTable();
     updateStatistics();
     
     console.log('應用初始化完成');
+}
+
+// 開始本地模式（從按鈕調用）
+function startLocalMode() {
+    console.log('切換到本地模式...');
+    
+    // 設定本地模式標記
+    isLocalMode = true;
+    localStorage.setItem('localMode', 'true');
+    
+    // 設定本地用戶
+    currentUser = { id: 'local_user', name: '本地用戶', email: 'local@localhost' };
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // 初始化本地模式UI
+    initializeLocalMode();
 }
 
 // 本地模式初始化
@@ -116,6 +138,8 @@ function selectMonth(month) {
 
 // 設定事件監聽器
 function setupEventListeners() {
+    console.log('設置事件監聽器...');
+    
     // 月度支出輸入框
     document.querySelectorAll('.monthly-input').forEach(input => {
         input.addEventListener('input', function() {
@@ -127,31 +151,59 @@ function setupEventListeners() {
     // 本地模式按鈕
     const useLocalBtn = document.getElementById('useLocalOnlyBtn');
     if (useLocalBtn) {
-        useLocalBtn.addEventListener('click', initializeLocalMode);
+        console.log('綁定本地模式按鈕');
+        useLocalBtn.addEventListener('click', function() {
+            console.log('本地模式按鈕被點擊');
+            startLocalMode();
+        });
+    } else {
+        console.log('未找到本地模式按鈕');
     }
     
     // 登出按鈕
     const signOutBtn = document.getElementById('signOutBtn');
     if (signOutBtn) {
-        signOutBtn.addEventListener('click', logout);
+        console.log('綁定登出按鈕');
+        signOutBtn.addEventListener('click', function() {
+            console.log('登出按鈕被點擊');
+            logout();
+        });
     }
     
     // 新增專案按鈕
     const addProjectBtn = document.getElementById('addProjectBtn');
     if (addProjectBtn) {
-        addProjectBtn.addEventListener('click', showAddProjectModal);
+        console.log('綁定新增專案按鈕');
+        addProjectBtn.addEventListener('click', function() {
+            console.log('新增專案按鈕被點擊');
+            showAddProjectModal();
+        });
+    } else {
+        console.log('未找到新增專案按鈕');
     }
     
     // 新增支出類型按鈕
     const addExpenseTypeBtn = document.getElementById('addExpenseTypeBtn');
     if (addExpenseTypeBtn) {
-        addExpenseTypeBtn.addEventListener('click', addExpenseType);
+        console.log('綁定新增支出類型按鈕');
+        addExpenseTypeBtn.addEventListener('click', function() {
+            console.log('新增支出類型按鈕被點擊');
+            addExpenseType();
+        });
+    } else {
+        console.log('未找到新增支出類型按鈕');
     }
     
     // 匯出按鈕
     const exportBtn = document.getElementById('exportBtn');
     if (exportBtn) {
-        exportBtn.addEventListener('click', exportData);
+        console.log('綁定匯出按鈕');
+        exportBtn.addEventListener('click', function() {
+            console.log('匯出按鈕被點擊');
+            exportData();
+        });
+    } else {
+        console.log('未找到匯出按鈕');
     }
     
     // Modal關閉按鈕
@@ -586,3 +638,4 @@ window.exportData = exportData;
 window.addMonthlyExpense = addMonthlyExpense;
 window.loadExpenseCategoryOptions = loadExpenseCategoryOptions;
 window.showTab = showTab;
+window.startLocalMode = startLocalMode;
