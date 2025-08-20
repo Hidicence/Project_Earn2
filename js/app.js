@@ -33,27 +33,7 @@ function checkBrowserSupport() {
 // Google 登入初始化完成後調用
 window.handleCredentialResponse = handleCredentialResponse;
 
-// 當用戶成功登入後初始化應用
-window.initializeAppAfterLogin = function() {
-    console.log('用戶已登入，初始化應用...');
-    
-    // 初始化數據
-    initializeData();
-    
-    // 設定當前月份
-    const monthSelector = document.getElementById('monthSelector');
-    if (monthSelector) {
-        monthSelector.value = currentMonth;
-    }
-    
-    // 載入支出項目選項
-    loadExpenseCategoryOptions();
-    
-    // 載入當前標籤頁
-    loadCurrentTab();
-    
-    console.log('應用初始化完成');
-};
+// 當用戶成功登入後初始化應用 - 移除，由tableUI.js處理
 
 // 全域錯誤處理
 window.addEventListener('error', function(e) {
@@ -88,21 +68,7 @@ ${APP_INFO.description}
 'color: #666; font-size: 12px;'
 );
 
-// 導出全域函數（給 HTML 調用）
-window.showTab = showTab;
-window.onMonthChange = onMonthChange;
-window.showAddProjectModal = showAddProjectModal;
-window.showAddCompanyExpenseModal = showAddCompanyExpenseModal;
-window.showAddCategoryModal = showAddCategoryModal;
-window.showProjectExpenses = showProjectExpenses;
-window.addProject = addProject;
-window.addProjectExpense = addProjectExpense;
-window.addCompanyExpense = addCompanyExpense;
-window.addCategory = addCategory;
-window.deleteProjectExpenseConfirm = deleteProjectExpenseConfirm;
-window.deleteCompanyExpenseConfirm = deleteCompanyExpenseConfirm;
-window.deleteCategoryConfirm = deleteCategoryConfirm;
-window.logout = logout;
+// 導出全域函數（給 HTML 調用） - 移到各自的文件中
 
 // 開發模式工具函數
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

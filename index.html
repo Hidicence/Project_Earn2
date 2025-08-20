@@ -3,336 +3,276 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>專案收支管理系統</title>
-    
-    <!-- CSS 框架和字體 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Google APIs -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+    <title>專案營利管理系統</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-    <!-- 登入頁面 -->
-    <div id="loginPage" class="login-container">
-        <div class="login-card">
-            <div class="text-center mb-4">
-                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
-                <h2>專案收支管理系統</h2>
-                <p class="text-muted">請先登入以開始使用</p>
-            </div>
+    <div class="container">
+        <header>
+            <h1>專案營利管理系統</h1>
             
-            <div class="text-center">
-                <div id="g_id_onload"
-                     data-client_id="343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com"
-                     data-callback="handleCredentialResponse"
-                     data-auto_prompt="false">
+            <!-- Google 登入狀態區域 -->
+            <div class="user-status" id="userStatus">
+                <div class="not-signed-in" id="notSignedIn">
+                    <div class="google-login-container" id="googleLoginContainer">
+                        <div id="g_id_onload"
+                             data-client_id="343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com"
+                             data-callback="handleCredentialResponse"
+                             data-auto_prompt="false">
+                        </div>
+                        <div class="g_id_signin"
+                             data-type="standard"
+                             data-size="large"
+                             data-theme="outline"
+                             data-text="sign_in_with"
+                             data-shape="rectangular"
+                             data-logo_alignment="left">
+                        </div>
+                    </div>
+                    
+                    <div class="setup-required" id="setupRequired" style="display: none;">
+                        <div class="setup-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h4>Google 登入被封鎖</h4>
+                            <p>您的帳戶需要被添加為測試用戶才能使用 Google 登入功能</p>
+                            <button id="useLocalOnlyBtn" class="btn tertiary">
+                                <i class="fas fa-hdd"></i> 暫時使用本地模式
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="g_id_signin" 
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="outline"
-                     data-text="sign_in_with"
-                     data-shape="rectangular"
-                     data-logo_alignment="left">
-                </div>
-            </div>
-            
-            <!-- 本地查看模式 -->
-            <div class="mt-4">
-                <hr>
-                <div class="text-center">
-                    <p class="text-muted small mb-2">或者</p>
-                    <button id="useLocalOnlyBtn" class="btn btn-outline-secondary">
-                        <i class="fas fa-hdd me-2"></i>
-                        暫時使用本地模式
-                    </button>
-                    <p class="text-muted small mt-2">僅在本機儲存，不同步雲端</p>
-                </div>
-            </div>
-            
-            <div class="mt-4 text-center">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle"></i> 
-                    使用Google帳號登入，資料將安全保存在您的瀏覽器中
-                </small>
-            </div>
-        </div>
-    </div>
-
-    <!-- 主應用頁面 -->
-    <div id="mainApp" class="d-none">
-        <!-- 導航欄 -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">
-                    <i class="fas fa-chart-line me-2"></i>專案收支管理
-                </a>
                 
-                <!-- 月份選擇 -->
-                <div class="navbar-nav me-auto">
-                    <div class="nav-item">
-                        <select id="monthSelector" class="form-select form-select-sm bg-light" onchange="onMonthChange()">
-                            <!-- 月份選項會動態生成 -->
+                <div class="signed-in" id="signedIn" style="display: none;">
+                    <div class="user-info">
+                        <img id="userPhoto" class="user-photo" src="" alt="">
+                        <div class="user-details">
+                            <span id="userName" class="user-name"></span>
+                            <span id="userEmail" class="user-email"></span>
+                        </div>
+                    </div>
+                    <div class="sync-status" id="syncStatus">
+                        <i class="fas fa-sync-alt" id="syncIcon"></i>
+                        <span id="syncText">已同步</span>
+                    </div>
+                    <button id="signOutBtn" class="btn btn-outline">
+                        <i class="fas fa-sign-out-alt"></i>
+                        登出
+                    </button>
+                </div>
+            </div>
+            
+            <div class="header-buttons">
+                <button id="addProjectBtn" class="btn primary">
+                    <i class="fas fa-plus-circle"></i>
+                    新增專案
+                </button>
+                <button id="addExpenseTypeBtn" class="btn secondary">
+                    <i class="fas fa-tags"></i>
+                    新增支出類型
+                </button>
+                <button id="exportBtn" class="btn tertiary">
+                    <i class="fas fa-download"></i>
+                    匯出數據
+                </button>
+            </div>
+        </header>
+
+        <!-- 月份標籤 -->
+        <section class="month-tabs-section fade-in-up">
+            <div class="month-tabs">
+                <div id="monthTabsContainer" class="month-tabs-container">
+                    <!-- 動態生成月份標籤 -->
+                </div>
+                <button id="addMonthBtn" class="btn add-month">
+                    <i class="fas fa-plus"></i>
+                    新增月份
+                </button>
+            </div>
+        </section>
+
+        <main>
+            <!-- 快速統計概覽 -->
+            <section class="quick-stats-section fade-in-up">
+                <h2>當月快速統計</h2>
+                <div class="stats-grid">
+                    <div class="stat-card revenue">
+                        <div class="stat-icon">
+                            <i class="fas fa-arrow-trend-up"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">總收入</div>
+                            <div class="stat-value" id="quickTotalIncome">$0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card expenses">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line-down"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">總支出</div>
+                            <div class="stat-value" id="quickTotalExpenses">$0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">淨利潤</div>
+                            <div class="stat-value" id="quickNetProfit">$0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card ratio">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">平均營利比</div>
+                            <div class="stat-value" id="quickAvgRatio">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 專案列表 -->
+            <section class="projects-section fade-in-up">
+                <div class="section-header">
+                    <h2>專案收支明細</h2>
+                    <div class="project-controls">
+                        <div class="search-box">
+                            <input type="text" id="projectSearch" placeholder="搜索專案..." class="search-input">
+                            <i class="search-icon fas fa-search"></i>
+                        </div>
+                        <select id="profitFilter" class="filter-select">
+                            <option value="all">所有專案</option>
+                            <option value="profitable">有盈利</option>
+                            <option value="loss">虧損</option>
+                            <option value="high-ratio">高營利比(≥30%)</option>
                         </select>
                     </div>
                 </div>
-                
-                <!-- 用戶信息 -->
-                <div class="navbar-nav">
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <img id="userAvatar" src="" alt="User" class="rounded-circle me-2" width="32" height="32">
-                            <span id="userName">使用者</span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="exportData()">
-                                <i class="fas fa-download me-2"></i>匯出數據
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="logout()">
-                                <i class="fas fa-sign-out-alt me-2"></i>登出
-                            </a></li>
-                        </ul>
-                    </div>
+                <div class="table-container">
+                    <table id="projectsTable" class="projects-table">
+                        <thead>
+                            <tr>
+                                <th>專案名稱</th>
+                                <th class="expense-col" id="expenseCol1">器材租賃費用</th>
+                                <th class="expense-col" id="expenseCol2">交通費</th>
+                                <th class="expense-col" id="expenseCol3">餐費</th>
+                                <th class="expense-col" id="expenseCol4">雜費</th>
+                                <th class="expense-col" id="expenseCol5">人事費</th>
+                                <th class="expense-col" id="expenseCol6">後製費</th>
+                                <th class="total-col">支出加總</th>
+                                <th class="income-col">案件總收入(含稅)</th>
+                                <th class="profit-col">專案總盈虧</th>
+                                <th class="profit-ratio-col">專案營利比</th>
+                                <th class="payment-col">收款</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsTableBody">
+                            <!-- 動態內容 -->
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-        </nav>
+            </section>
 
-        <!-- 主內容區域 -->
-        <div class="container-fluid mt-3">
-            <!-- 快速統計 -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card bg-success text-white">
-                        <div class="card-body text-center">
-                            <i class="fas fa-arrow-trend-up fa-2x mb-2"></i>
-                            <h4 id="quickTotalIncome">$0</h4>
-                            <small>總收入</small>
+            <!-- 當月支出統計 -->
+            <section class="monthly-expenses-section fade-in-up">
+                <h2>當月支出統計</h2>
+                <div class="monthly-expenses">
+                    <div class="expense-items">
+                        <div class="expense-item">
+                            <label>稅金</label>
+                            <input type="number" id="tax" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>公益</label>
+                            <input type="number" id="charity" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>器材購買費</label>
+                            <input type="number" id="equipment" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>雜支</label>
+                            <input type="number" id="miscellaneous" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>薪資</label>
+                            <input type="number" id="salary" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>貸款</label>
+                            <input type="number" id="loan" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>房租水電</label>
+                            <input type="number" id="rent" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>BNI</label>
+                            <input type="number" id="bni" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>諮詢商會</label>
+                            <input type="number" id="consulting" value="0" class="monthly-input">
+                        </div>
+                        <div class="expense-item">
+                            <label>保險</label>
+                            <input type="number" id="insurance" value="0" class="monthly-input">
+                        </div>
+                    </div>
+                    
+                    <div class="monthly-summary">
+                        <div class="summary-item current-loss">
+                            <label>當月實際營業額</label>
+                            <span id="monthlyRevenue">$0</span>
+                        </div>
+                        <div class="summary-item monthly-expenses">
+                            <label>當月支出總額</label>
+                            <span id="monthlyExpenses">$0</span>
+                        </div>
+                        <div class="summary-item monthly-income">
+                            <label>當月收款總額</label>
+                            <span id="monthlyIncome">$0</span>
+                        </div>
+                        <div class="summary-item adjusted-profit">
+                            <label>調整後盈餘</label>
+                            <span id="adjustedProfit">$0</span>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card bg-danger text-white">
-                        <div class="card-body text-center">
-                            <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
-                            <h4 id="quickTotalExpenses">$0</h4>
-                            <small>總支出</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-info text-white">
-                        <div class="card-body text-center">
-                            <i class="fas fa-coins fa-2x mb-2"></i>
-                            <h4 id="quickNetProfit">$0</h4>
-                            <small>淨利潤</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-warning text-white">
-                        <div class="card-body text-center">
-                            <i class="fas fa-percentage fa-2x mb-2"></i>
-                            <h4 id="quickAvgRatio">0%</h4>
-                            <small>平均營利比</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </section>
+        </main>
+    </div>
 
-            <!-- 操作按鈕 -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-primary" onclick="addNewProject()">
-                            <i class="fas fa-plus-circle me-1"></i>新增專案
-                        </button>
-                        <button class="btn btn-secondary" onclick="addExpenseType()">
-                            <i class="fas fa-tags me-1"></i>新增支出類型
-                        </button>
-                        <button class="btn btn-info" onclick="toggleChartsView()">
-                            <i class="fas fa-chart-bar me-1"></i>圖表分析
-                        </button>
-                        <button class="btn btn-success" onclick="addMonthlyExpense()">
-                            <i class="fas fa-building me-1"></i>公司支出
-                        </button>
-                    </div>
+    <!-- 新增專案Modal -->
+    <div id="addProjectModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>新增專案</h3>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label for="projectName">專案名稱</label>
+                    <input type="text" id="projectName" required>
                 </div>
-            </div>
-
-            <!-- 專案收支表格 -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">專案收支明細</h5>
+                <div class="form-group">
+                    <label for="projectIncome">案件總收入(含稅)</label>
+                    <input type="number" id="projectIncome" required>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm projects-table mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th style="min-width: 150px;">專案名稱</th>
-                                    <th class="expense-col">器材租賃費用</th>
-                                    <th class="expense-col">交通費</th>
-                                    <th class="expense-col">餐費</th>
-                                    <th class="expense-col">雜費</th>
-                                    <th class="expense-col">人事費</th>
-                                    <th class="expense-col">後製費</th>
-                                    <th class="total-col">支出加總</th>
-                                    <th class="income-col">案件總收入(含稅)</th>
-                                    <th class="profit-col">專案總盈虧</th>
-                                    <th class="profit-ratio-col">營利比</th>
-                                    <th class="payment-col">收款</th>
-                                    <th style="width: 100px;">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="projectsTableBody">
-                                <!-- 動態生成專案行 -->
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="form-group">
+                    <label for="projectPayment">收款金額</label>
+                    <input type="number" id="projectPayment" value="0">
                 </div>
-            </div>
-
-            <!-- 當月公司支出 -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">當月公司支出統計</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label small">稅金</label>
-                                    <input type="number" id="tax" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">公益</label>
-                                    <input type="number" id="charity" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">器材購買</label>
-                                    <input type="number" id="equipment" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">雜支</label>
-                                    <input type="number" id="miscellaneous" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">薪資</label>
-                                    <input type="number" id="salary" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">貸款</label>
-                                    <input type="number" id="loan" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">房租水電</label>
-                                    <input type="number" id="rent" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">BNI</label>
-                                    <input type="number" id="bni" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">諮詢商會</label>
-                                    <input type="number" id="consulting" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">保險</label>
-                                    <input type="number" id="insurance" class="form-control form-control-sm monthly-input" value="0">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="summary-stats">
-                                <div class="stat-item">
-                                    <strong>當月支出總額：</strong>
-                                    <span id="monthlyExpenses" class="text-danger">$0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <strong>當月收款總額：</strong>
-                                    <span id="monthlyIncome" class="text-success">$0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <strong>調整後盈餘：</strong>
-                                    <span id="adjustedProfit" class="fw-bold">$0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 圖表分析區域 (可切換顯示) -->
-            <div id="chartsSection" class="d-none mt-4">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">專案收支比較</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="projectComparisonChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">支出分布</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="expenseDistributionChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="btn primary">新增專案</button>
+            </form>
         </div>
     </div>
 
-    <!-- 新增專案 Modal -->
-    <div class="modal fade" id="addProjectModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">新增專案</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addProjectForm">
-                        <div class="mb-3">
-                            <label class="form-label">專案名稱 *</label>
-                            <input type="text" class="form-control" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">案件總收入(含稅) *</label>
-                            <input type="number" class="form-control" name="totalIncome" min="0" step="0.01" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">收款金額</label>
-                            <input type="number" class="form-control" name="payment" min="0" step="0.01" value="0">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="submitNewProject()">新增專案</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript 庫 -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
     <script src="js/tableUI.js"></script>

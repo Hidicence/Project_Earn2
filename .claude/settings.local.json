@@ -8,7 +8,9 @@
       "Bash(git commit:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(copy styles.css \"C:\\Users\\User\\Desktop\\0820projectearn2\\css\\styles.css\")",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,4 +1,4 @@
-// 表格式UI控制邏輯
+// 表格UI邏輯 - 適配昨天的設計
 
 let currentMonth = new Date().toISOString().slice(0, 7);
 let expenseTypes = ['器材租賃費用', '交通費', '餐費', '雜費', '人事費', '後製費'];
@@ -7,31 +7,37 @@ let monthlyExpenses = {};
 
 // 初始化應用
 function initializeAppAfterLogin() {
-    console.log('用戶已登入，初始化表格界面...');
+    console.log('用戶已登入，初始化應用...');
     
     // 設定用戶信息
     if (currentUser) {
         document.getElementById('userName').textContent = currentUser.name || '本地用戶';
+        document.getElementById('userEmail').textContent = currentUser.email || '';
         if (currentUser.picture) {
-            document.getElementById('userAvatar').src = currentUser.picture;
+            document.getElementById('userPhoto').src = currentUser.picture;
         }
+        
+        // 顯示已登入狀態
+        document.getElementById('notSignedIn').style.display = 'none';
+        document.getElementById('signedIn').style.display = 'flex';
     }
     
-    // 初始化月份選擇器
-    initializeMonthSelector();
+    // 初始化月份標籤
+    initializeMonthTabs();
     
     // 載入數據
+    loadExpenseTypes();
     loadProjects();
     loadMonthlyExpenses();
     
     // 設定事件監聽器
     setupEventListeners();
     
-    // 渲染表格
+    // 渲染界面
     renderProjectsTable();
     updateStatistics();
     
-    console.log('表格界面初始化完成');
+    console.log('應用初始化完成');
 }
 
 // 本地模式初始化
@@ -40,14 +46,15 @@ function initializeLocalMode() {
     
     // 設定本地用戶信息
     document.getElementById('userName').textContent = '本地用戶';
-    document.getElementById('userAvatar').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%23007bff"/><text x="16" y="20" text-anchor="middle" fill="white" font-size="14">本</text></svg>';
+    document.getElementById('userEmail').textContent = '離線模式';
+    document.getElementById('userPhoto').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%236366f1"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">本</text></svg>';
     
-    // 顯示主應用
-    document.getElementById('loginPage').classList.add('d-none');
-    document.getElementById('mainApp').classList.remove('d-none');
+    // 顯示已登入狀態
+    document.getElementById('notSignedIn').style.display = 'none';
+    document.getElementById('signedIn').style.display = 'flex';
     
-    // 初始化界面
-    initializeMonthSelector();
+    initializeMonthTabs();
+    loadExpenseTypes();
     loadProjects();
     loadMonthlyExpenses();
     setupEventListeners();
@@ -57,26 +64,54 @@ function initializeLocalMode() {
     console.log('本地模式初始化完成');
 }
 
-// 初始化月份選擇器
-function initializeMonthSelector() {
-    const monthSelector = document.getElementById('monthSelector');
-    monthSelector.innerHTML = '';
+// 初始化月份標籤
+function initializeMonthTabs() {
+    const container = document.getElementById('monthTabsContainer');
+    container.innerHTML = '';
     
-    // 生成最近12個月的選項
+    // 生成最近12個月的標籤
     const currentDate = new Date();
     for (let i = 0; i < 12; i++) {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
         const monthValue = date.toISOString().slice(0, 7);
         const monthText = date.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long' });
         
-        const option = document.createElement('option');
-        option.value = monthValue;
-        option.textContent = monthText;
+        const tab = document.createElement('div');
+        tab.className = 'month-tab';
         if (monthValue === currentMonth) {
-            option.selected = true;
+            tab.classList.add('active');
         }
-        monthSelector.appendChild(option);
+        tab.innerHTML = `
+            <span>${monthText}</span>
+            <button class="delete-month" onclick="deleteMonth('${monthValue}')" title="刪除月份">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        tab.addEventListener('click', (e) => {
+            if (!e.target.closest('.delete-month')) {
+                selectMonth(monthValue);
+            }
+        });
+        
+        container.appendChild(tab);
     }
+}
+
+// 選擇月份
+function selectMonth(month) {
+    currentMonth = month;
+    
+    // 更新標籤狀態
+    document.querySelectorAll('.month-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    // 重新載入數據
+    loadProjects();
+    loadMonthlyExpenses();
+    renderProjectsTable();
+    updateStatistics();
 }
 
 // 設定事件監聽器
@@ -94,6 +129,65 @@ function setupEventListeners() {
     if (useLocalBtn) {
         useLocalBtn.addEventListener('click', initializeLocalMode);
     }
+    
+    // 登出按鈕
+    const signOutBtn = document.getElementById('signOutBtn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', logout);
+    }
+    
+    // 新增專案按鈕
+    const addProjectBtn = document.getElementById('addProjectBtn');
+    if (addProjectBtn) {
+        addProjectBtn.addEventListener('click', showAddProjectModal);
+    }
+    
+    // 新增支出類型按鈕
+    const addExpenseTypeBtn = document.getElementById('addExpenseTypeBtn');
+    if (addExpenseTypeBtn) {
+        addExpenseTypeBtn.addEventListener('click', addExpenseType);
+    }
+    
+    // 匯出按鈕
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportData);
+    }
+    
+    // Modal關閉按鈕
+    document.querySelectorAll('.close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function() {
+            this.closest('.modal').style.display = 'none';
+        });
+    });
+    
+    // 專案表單提交
+    const projectForm = document.getElementById('projectForm');
+    if (projectForm) {
+        projectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitNewProject();
+        });
+    }
+}
+
+// 載入支出類型
+function loadExpenseTypes() {
+    const saved = localStorage.getItem('expenseTypes');
+    if (saved) {
+        expenseTypes = JSON.parse(saved);
+        updateTableHeaders();
+    }
+}
+
+// 更新表格標題
+function updateTableHeaders() {
+    expenseTypes.forEach((type, index) => {
+        const header = document.getElementById(`expenseCol${index + 1}`);
+        if (header) {
+            header.textContent = type;
+        }
+    });
 }
 
 // 載入專案數據
@@ -132,8 +226,8 @@ function renderProjectsTable() {
     if (projects.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td colspan="13" class="text-center text-muted py-4">
-                <i class="fas fa-inbox fa-2x mb-2"></i><br>
+            <td colspan="13" style="text-align: center; padding: 2rem; color: #6b7280;">
+                <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
                 本月尚無專案，點擊「新增專案」開始記錄
             </td>
         `;
@@ -160,47 +254,61 @@ function createProjectRow(project, index) {
     const profit = project.totalIncome - totalExpenses;
     const profitRatio = project.totalIncome > 0 ? (profit / project.totalIncome * 100) : 0;
     
+    // 計算公司盈虧（扣除公司支出分攤）
+    const totalCompanyExpenses = Object.values(monthlyExpenses).reduce((sum, val) => sum + val, 0);
+    const projectShare = projects.length > 0 ? totalCompanyExpenses / projects.length : 0;
+    const companyProfit = profit - projectShare;
+    
     // 設定樣式類別
-    const profitClass = profit >= 0 ? 'text-success' : 'text-danger';
-    const ratioClass = profitRatio >= 0 ? 'text-success' : 'text-danger';
+    const profitClass = profit >= 0 ? 'positive' : 'negative';
+    const ratioClass = profitRatio >= 0 ? 'positive' : 'negative';
+    const companyProfitClass = companyProfit >= 0 ? 'positive' : 'negative';
     
     row.innerHTML = `
         <td>
-            <div class="d-flex align-items-center">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <strong>${project.name}</strong>
-                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="editProjectName(${index})" title="編輯名稱">
+                <button class="btn delete" onclick="editProjectName(${index})" title="編輯名稱" style="padding: 0.25rem;">
                     <i class="fas fa-edit"></i>
                 </button>
             </div>
         </td>
-        ${expenseTypes.map(type => `
-            <td>
-                <input type="number" 
-                       class="form-control form-control-sm expense-input" 
-                       value="${project.expenses[type] || 0}"
-                       onchange="updateProjectExpense(${index}, '${type}', this.value)"
-                       min="0" step="0.01">
+        ${expenseTypes.map((type, i) => `
+            <td class="expense-col">
+                <div class="expense-cell-content">
+                    <input type="number" 
+                           class="table-input" 
+                           value="${project.expenses[type] || 0}"
+                           onchange="updateProjectExpense(${index}, '${type}', this.value)"
+                           min="0" step="0.01">
+                    <span class="note-indicator ${project.notes && project.notes[type] ? '' : 'empty'}" 
+                          onclick="editExpenseNote(${index}, '${type}')" 
+                          title="${project.notes && project.notes[type] ? project.notes[type] : '點擊添加備註'}">
+                        <i class="fas fa-sticky-note"></i>
+                    </span>
+                </div>
             </td>
         `).join('')}
-        <td class="fw-bold">$${totalExpenses.toLocaleString()}</td>
-        <td>
+        <td class="total-col">$${totalExpenses.toLocaleString()}</td>
+        <td class="income-col">
             <input type="number" 
-                   class="form-control form-control-sm income-input" 
+                   class="table-input" 
                    value="${project.totalIncome}"
                    onchange="updateProjectIncome(${index}, this.value)"
                    min="0" step="0.01">
         </td>
-        <td class="${profitClass} fw-bold">$${profit.toLocaleString()}</td>
-        <td class="${ratioClass} fw-bold">${profitRatio.toFixed(1)}%</td>
-        <td>
+        <td class="profit-col ${profitClass}">$${profit.toLocaleString()}</td>
+        <td class="profit-ratio-col ${ratioClass}">${profitRatio.toFixed(1)}%</td>
+        <td class="company-profit-col ${companyProfitClass}">$${companyProfit.toLocaleString()}</td>
+        <td class="payment-col">
             <input type="number" 
-                   class="form-control form-control-sm payment-input" 
+                   class="table-input" 
                    value="${project.payment || 0}"
                    onchange="updateProjectPayment(${index}, this.value)"
                    min="0" step="0.01">
         </td>
         <td>
-            <button class="btn btn-sm btn-danger" onclick="deleteProject(${index})" title="刪除專案">
+            <button class="btn delete" onclick="deleteProject(${index})" title="刪除專案">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
@@ -209,11 +317,54 @@ function createProjectRow(project, index) {
     return row;
 }
 
+// 顯示新增專案Modal
+function showAddProjectModal() {
+    document.getElementById('addProjectModal').style.display = 'block';
+}
+
+// 提交新專案
+function submitNewProject() {
+    const formData = new FormData(document.getElementById('projectForm'));
+    
+    const newProject = {
+        name: formData.get('projectName').trim(),
+        totalIncome: parseFloat(formData.get('projectIncome')) || 0,
+        payment: parseFloat(formData.get('projectPayment')) || 0,
+        expenses: {},
+        notes: {}
+    };
+    
+    // 初始化支出為0
+    expenseTypes.forEach(type => {
+        newProject.expenses[type] = 0;
+    });
+    
+    if (!newProject.name) {
+        alert('請輸入專案名稱');
+        return;
+    }
+    
+    projects.push(newProject);
+    saveProjects();
+    renderProjectsTable();
+    updateStatistics();
+    
+    // 關閉Modal並重置表單
+    document.getElementById('addProjectModal').style.display = 'none';
+    document.getElementById('projectForm').reset();
+    
+    showToast('專案新增成功！');
+}
+
 // 更新專案支出
 function updateProjectExpense(projectIndex, expenseType, value) {
     const numValue = parseFloat(value) || 0;
+    if (!projects[projectIndex].expenses) {
+        projects[projectIndex].expenses = {};
+    }
     projects[projectIndex].expenses[expenseType] = numValue;
     saveProjects();
+    renderProjectsTable();
     updateStatistics();
 }
 
@@ -244,6 +395,21 @@ function editProjectName(projectIndex) {
     }
 }
 
+// 編輯支出備註
+function editExpenseNote(projectIndex, expenseType) {
+    const currentNote = (projects[projectIndex].notes && projects[projectIndex].notes[expenseType]) || '';
+    const newNote = prompt(`請輸入「${expenseType}」的備註:`, currentNote);
+    
+    if (newNote !== null) {
+        if (!projects[projectIndex].notes) {
+            projects[projectIndex].notes = {};
+        }
+        projects[projectIndex].notes[expenseType] = newNote;
+        saveProjects();
+        renderProjectsTable();
+    }
+}
+
 // 刪除專案
 function deleteProject(projectIndex) {
     if (confirm(`確定要刪除專案「${projects[projectIndex].name}」嗎？`)) {
@@ -251,48 +417,8 @@ function deleteProject(projectIndex) {
         saveProjects();
         renderProjectsTable();
         updateStatistics();
-        showToast('專案已刪除', 'success');
+        showToast('專案已刪除');
     }
-}
-
-// 新增專案
-function addNewProject() {
-    const modal = new bootstrap.Modal(document.getElementById('addProjectModal'));
-    modal.show();
-}
-
-// 提交新專案
-function submitNewProject() {
-    const form = document.getElementById('addProjectForm');
-    const formData = new FormData(form);
-    
-    const newProject = {
-        name: formData.get('name').trim(),
-        totalIncome: parseFloat(formData.get('totalIncome')) || 0,
-        payment: parseFloat(formData.get('payment')) || 0,
-        expenses: {}
-    };
-    
-    // 初始化支出為0
-    expenseTypes.forEach(type => {
-        newProject.expenses[type] = 0;
-    });
-    
-    if (!newProject.name) {
-        alert('請輸入專案名稱');
-        return;
-    }
-    
-    projects.push(newProject);
-    saveProjects();
-    renderProjectsTable();
-    updateStatistics();
-    
-    // 關閉Modal並重置表單
-    bootstrap.Modal.getInstance(document.getElementById('addProjectModal')).hide();
-    form.reset();
-    
-    showToast('專案新增成功！', 'success');
 }
 
 // 更新月度支出
@@ -303,6 +429,7 @@ function updateMonthlyExpenses() {
     
     saveMonthlyExpenses();
     updateMonthlyStats();
+    renderProjectsTable(); // 重新渲染表格以更新公司盈虧
 }
 
 // 更新月度統計
@@ -310,15 +437,10 @@ function updateMonthlyStats() {
     const totalMonthlyExpenses = Object.values(monthlyExpenses).reduce((sum, val) => sum + val, 0);
     const totalPayments = projects.reduce((sum, project) => sum + (project.payment || 0), 0);
     const totalIncome = projects.reduce((sum, project) => sum + project.totalIncome, 0);
-    const totalExpenses = projects.reduce((sum, project) => {
-        return sum + expenseTypes.reduce((expSum, type) => expSum + (project.expenses[type] || 0), 0);
-    }, 0);
-    const adjustedProfit = totalIncome - totalExpenses - totalMonthlyExpenses;
     
+    document.getElementById('monthlyRevenue').textContent = `$${totalIncome.toLocaleString()}`;
     document.getElementById('monthlyExpenses').textContent = `$${totalMonthlyExpenses.toLocaleString()}`;
     document.getElementById('monthlyIncome').textContent = `$${totalPayments.toLocaleString()}`;
-    document.getElementById('adjustedProfit').textContent = `$${adjustedProfit.toLocaleString()}`;
-    document.getElementById('adjustedProfit').className = adjustedProfit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
 }
 
 // 更新統計
@@ -335,55 +457,34 @@ function updateStatistics() {
     document.getElementById('quickNetProfit').textContent = `$${netProfit.toLocaleString()}`;
     document.getElementById('quickAvgRatio').textContent = `${avgRatio.toFixed(1)}%`;
     
-    // 更新統計卡片顏色
-    const profitCard = document.getElementById('quickNetProfit').closest('.card');
-    const ratioCard = document.getElementById('quickAvgRatio').closest('.card');
-    
-    if (netProfit >= 0) {
-        profitCard.className = 'card bg-success text-white';
-        ratioCard.className = 'card bg-success text-white';
-    } else {
-        profitCard.className = 'card bg-danger text-white';
-        ratioCard.className = 'card bg-danger text-white';
-    }
-    
     updateMonthlyStats();
 }
 
-// 月份變更
-function onMonthChange() {
-    const newMonth = document.getElementById('monthSelector').value;
-    if (newMonth !== currentMonth) {
-        currentMonth = newMonth;
-        loadProjects();
-        loadMonthlyExpenses();
-        renderProjectsTable();
-        updateStatistics();
+// 新增支出類型
+function addExpenseType() {
+    const newType = prompt('請輸入新的支出類型名稱:');
+    if (newType && newType.trim()) {
+        if (!expenseTypes.includes(newType.trim())) {
+            expenseTypes.push(newType.trim());
+            saveExpenseTypes();
+            showToast('支出類型新增成功！請重新載入頁面查看新欄位');
+        } else {
+            alert('此支出類型已存在');
+        }
     }
 }
 
-// 保存專案數據
+// 保存相關函數
 function saveProjects() {
     localStorage.setItem(`projects_${currentMonth}`, JSON.stringify(projects));
 }
 
-// 保存月度支出數據
 function saveMonthlyExpenses() {
     localStorage.setItem(`monthlyExpenses_${currentMonth}`, JSON.stringify(monthlyExpenses));
 }
 
-// 切換圖表顯示
-function toggleChartsView() {
-    const chartsSection = document.getElementById('chartsSection');
-    const isVisible = !chartsSection.classList.contains('d-none');
-    
-    if (isVisible) {
-        chartsSection.classList.add('d-none');
-    } else {
-        chartsSection.classList.remove('d-none');
-        // 載入圖表
-        setTimeout(loadCharts, 100);
-    }
+function saveExpenseTypes() {
+    localStorage.setItem('expenseTypes', JSON.stringify(expenseTypes));
 }
 
 // 導出數據
@@ -392,6 +493,7 @@ function exportData() {
         month: currentMonth,
         projects: projects,
         monthlyExpenses: monthlyExpenses,
+        expenseTypes: expenseTypes,
         exportDate: new Date().toISOString()
     };
     
@@ -405,85 +507,61 @@ function exportData() {
     link.click();
     
     URL.revokeObjectURL(url);
-    showToast('數據導出成功！', 'success');
+    showToast('數據導出成功！');
 }
 
 // 顯示提示
-function showToast(message, type = 'info') {
-    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-    
+function showToast(message) {
     const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'primary'} border-0`;
-    toast.setAttribute('role', 'alert');
-    
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-${type === 'success' ? 'check' : 'info'}-circle me-2"></i>
-                ${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--brand-success);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        animation: slideInRight 0.3s ease-out;
     `;
+    toast.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>${message}`;
     
-    toastContainer.appendChild(toast);
+    document.body.appendChild(toast);
     
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    
-    // 3秒後自動移除
     setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
+        toast.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
     }, 3000);
 }
 
-// 創建Toast容器
-function createToastContainer() {
-    const container = document.createElement('div');
-    container.id = 'toastContainer';
-    container.className = 'toast-container position-fixed top-0 end-0 p-3';
-    container.style.zIndex = '9999';
-    document.body.appendChild(container);
-    return container;
-}
+// 添加CSS動畫
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
 
-// 圖表數據適配器
-function getProjectComparisonData() {
-    return projects.map(project => {
-        const totalExpenses = expenseTypes.reduce((sum, type) => sum + (project.expenses[type] || 0), 0);
-        return {
-            name: project.name,
-            revenue: project.totalIncome,
-            expenses: totalExpenses,
-            profit: project.totalIncome - totalExpenses,
-            profitMargin: project.totalIncome > 0 ? ((project.totalIncome - totalExpenses) / project.totalIncome * 100) : 0
-        };
-    });
-}
-
-function getExpenseDistributionData() {
-    const categoryTotals = {};
-    
-    expenseTypes.forEach(type => {
-        categoryTotals[type] = projects.reduce((sum, project) => sum + (project.expenses[type] || 0), 0);
-    });
-    
-    return Object.entries(categoryTotals)
-        .filter(([_, total]) => total > 0)
-        .map(([category, total]) => ({ category, total }));
-}
-
-// 全域函數導出
-window.addNewProject = addNewProject;
-window.submitNewProject = submitNewProject;
+// 導出全域函數
+window.initializeAppAfterLogin = initializeAppAfterLogin;
 window.updateProjectExpense = updateProjectExpense;
 window.updateProjectIncome = updateProjectIncome;
 window.updateProjectPayment = updateProjectPayment;
 window.editProjectName = editProjectName;
+window.editExpenseNote = editExpenseNote;
 window.deleteProject = deleteProject;
-window.onMonthChange = onMonthChange;
-window.toggleChartsView = toggleChartsView;
+window.selectMonth = selectMonth;
+window.addExpenseType = addExpenseType;
 window.exportData = exportData;
-window.initializeAppAfterLogin = initializeAppAfterLogin;
