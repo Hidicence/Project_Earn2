@@ -373,9 +373,9 @@ function submitNewProject() {
     const formData = new FormData(document.getElementById('projectForm'));
     
     const newProject = {
-        name: formData.get('projectName').trim(),
-        totalIncome: parseFloat(formData.get('projectIncome')) || 0,
-        payment: parseFloat(formData.get('projectPayment')) || 0,
+        name: (formData.get('projectName') || '').toString().trim(),
+        totalIncome: parseFloat(formData.get('projectIncome') || '0') || 0,
+        payment: parseFloat(formData.get('projectPayment') || '0') || 0,
         expenses: {},
         notes: {}
     };

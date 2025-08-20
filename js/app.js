@@ -37,11 +37,11 @@ window.handleCredentialResponse = handleCredentialResponse;
 
 // 全域錯誤處理
 window.addEventListener('error', function(e) {
-    console.error('應用錯誤:', e.error);
-    
-    // 可以在這裡添加錯誤報告邏輯
-    if (e.error && e.error.message) {
-        showToast('發生錯誤: ' + e.error.message, 'error');
+    const err = e && (e.error || e.message || e);
+    const msg = (err && err.message) ? err.message : (typeof err === 'string' ? err : '未知錯誤');
+    console.error('應用錯誤:', err);
+    if (msg) {
+        try { showToast('發生錯誤: ' + msg, 'error'); } catch (_) {}
     }
 });
 
