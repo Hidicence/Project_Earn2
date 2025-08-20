@@ -211,6 +211,22 @@ function setupEventListeners() {
     } else {
         console.log('未找到匯出按鈕');
     }
+
+    // 搜尋/篩選
+    const projectSearch = document.getElementById('projectSearch');
+    if (projectSearch && !projectSearch.hasAttribute('data-listener')) {
+        projectSearch.addEventListener('input', () => {
+            renderProjectsTable();
+        });
+        projectSearch.setAttribute('data-listener', 'true');
+    }
+    const profitFilter = document.getElementById('profitFilter');
+    if (profitFilter && !profitFilter.hasAttribute('data-listener')) {
+        profitFilter.addEventListener('change', () => {
+            renderProjectsTable();
+        });
+        profitFilter.setAttribute('data-listener', 'true');
+    }
     
     // Modal關閉按鈕
     document.querySelectorAll('.close').forEach(closeBtn => {
@@ -311,20 +327,38 @@ function renderProjectsTable() {
     const tbody = document.getElementById('projectsTableBody');
     tbody.innerHTML = '';
     
-    if (projects.length === 0) {
+    // 搜尋與篩選
+    const keyword = (document.getElementById('projectSearch')?.value || '').toLowerCase().trim();
+    const filter = (document.getElementById('profitFilter')?.value || 'all');
+    
+    const filtered = projects.filter(p => {
+        const nameMatch = !keyword || (p.name || '').toLowerCase().includes(keyword);
+        // 計算盈虧
+        const totalExpenses = expenseTypes.reduce((sum, type) => sum + (p.expenses[type] || 0), 0);
+        const profit = (p.totalIncome || 0) - totalExpenses;
+        const ratio = (p.totalIncome || 0) > 0 ? (profit / p.totalIncome * 100) : 0;
+        let pass = true;
+        if (filter === 'profitable') pass = profit > 0;
+        if (filter === 'loss') pass = profit < 0;
+        if (filter === 'high-ratio') pass = ratio >= 30;
+        return nameMatch && pass;
+    });
+    
+    if (filtered.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td colspan="13" style="text-align: center; padding: 2rem; color: #6b7280;">
                 <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
-                本月尚無專案，點擊「新增專案」開始記錄
+                無符合條件的專案，試試調整搜尋或篩選
             </td>
         `;
         tbody.appendChild(row);
         return;
     }
     
-    projects.forEach((project, index) => {
-        const row = createProjectRow(project, index);
+    filtered.forEach((project, index) => {
+        const realIndex = projects.indexOf(project);
+        const row = createProjectRow(project, realIndex);
         tbody.appendChild(row);
     });
 }

@@ -750,7 +750,7 @@ section h2::before {
 .projects-table th,
 .projects-table td {
     padding: var(--spacing-md) var(--spacing-sm);
-    text-align: center;
+    text-align: right;
     border-bottom: 1px solid var(--gray-200);
     white-space: nowrap;
 }
@@ -765,6 +765,31 @@ section h2::before {
     font-size: var(--font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+/* 首欄名稱置左 */
+.projects-table th:first-child,
+.projects-table td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: inherit;
+    z-index: 5;
+}
+
+/* 提示 ? 樣式 */
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--neutral-0);
+    background: var(--neutral-500);
+    cursor: help;
 }
 
 .projects-table tbody tr {
