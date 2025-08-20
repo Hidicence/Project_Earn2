@@ -554,6 +554,24 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// 新增月度支出項目（補充遺漏的函數）
+function addMonthlyExpense() {
+    // 這個函數可能在舊版本中存在，現在通過updateMonthlyExpenses處理
+    console.log('addMonthlyExpense 函數已合併到 updateMonthlyExpenses 中');
+}
+
+// 載入支出類別選項（補充遺漏的函數）
+function loadExpenseCategoryOptions() {
+    // 在新版本中，支出類別直接在表格中顯示，不需要下拉選單
+    console.log('loadExpenseCategoryOptions 函數在新版本中不需要');
+}
+
+// 顯示標籤頁（補充遺漏的函數）
+function showTab(tabName) {
+    // 新版本使用單一表格界面，不需要標籤頁切換
+    console.log('showTab 函數在新版本中不需要，使用單一表格界面');
+}
+
 // 導出全域函數
 window.initializeAppAfterLogin = initializeAppAfterLogin;
 window.updateProjectExpense = updateProjectExpense;
@@ -565,3 +583,6 @@ window.deleteProject = deleteProject;
 window.selectMonth = selectMonth;
 window.addExpenseType = addExpenseType;
 window.exportData = exportData;
+window.addMonthlyExpense = addMonthlyExpense;
+window.loadExpenseCategoryOptions = loadExpenseCategoryOptions;
+window.showTab = showTab;

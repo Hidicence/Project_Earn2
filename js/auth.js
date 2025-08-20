@@ -1,15 +1,22 @@
 // Google 認證相關功能
 
 let currentUser = null;
+let isLocalMode = false;
 
 // 初始化認證狀態
 function initAuth() {
     const savedUser = localStorage.getItem('currentUser');
+    const localMode = localStorage.getItem('localMode') === 'true';
+    
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        showMainApp();
+        showSignedInState();
+    } else if (localMode) {
+        isLocalMode = true;
+        currentUser = { id: 'local_user', name: '本地用戶', email: 'local@localhost' };
+        showSignedInState();
     } else {
-        showLoginPage();
+        showNotSignedInState();
     }
 }
 
@@ -31,8 +38,8 @@ function handleCredentialResponse(response) {
         // 保存用戶資訊到 localStorage
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         
-        // 顯示主應用
-        showMainApp();
+        // 顯示已登入狀態
+        showSignedInState();
         
         console.log('用戶登入成功:', currentUser);
     } catch (error) {
@@ -52,22 +59,47 @@ function decodeJwtResponse(token) {
     return JSON.parse(jsonPayload);
 }
 
-// 顯示登入頁面
-function showLoginPage() {
-    document.getElementById('loginPage').classList.remove('d-none');
-    document.getElementById('mainApp').classList.add('d-none');
+// 顯示未登入狀態
+function showNotSignedInState() {
+    document.getElementById('notSignedIn').style.display = 'block';
+    document.getElementById('signedIn').style.display = 'none';
+    
+    // 綁定本地模式按鈕
+    const useLocalBtn = document.getElementById('useLocalOnlyBtn');
+    if (useLocalBtn && !useLocalBtn.hasAttribute('data-listener')) {
+        useLocalBtn.addEventListener('click', function() {
+            startLocalMode();
+        });
+        useLocalBtn.setAttribute('data-listener', 'true');
+    }
 }
 
-// 顯示主應用
-function showMainApp() {
+// 顯示已登入狀態
+function showSignedInState() {
     if (!currentUser) return;
     
-    document.getElementById('loginPage').classList.add('d-none');
-    document.getElementById('mainApp').classList.remove('d-none');
+    document.getElementById('notSignedIn').style.display = 'none';
+    document.getElementById('signedIn').style.display = 'block';
     
     // 設定用戶資訊顯示
-    document.getElementById('userName').textContent = currentUser.name;
-    document.getElementById('userAvatar').src = currentUser.picture;
+    if (currentUser.name) {
+        document.getElementById('userName').textContent = currentUser.name;
+    }
+    if (currentUser.email) {
+        document.getElementById('userEmail').textContent = currentUser.email;
+    }
+    if (currentUser.picture) {
+        document.getElementById('userPhoto').src = currentUser.picture;
+    }
+    
+    // 綁定登出按鈕
+    const signOutBtn = document.getElementById('signOutBtn');
+    if (signOutBtn && !signOutBtn.hasAttribute('data-listener')) {
+        signOutBtn.addEventListener('click', function() {
+            logout();
+        });
+        signOutBtn.setAttribute('data-listener', 'true');
+    }
     
     // 初始化應用數據
     if (typeof initializeAppAfterLogin === 'function') {
@@ -75,20 +107,32 @@ function showMainApp() {
     }
 }
 
+// 開始本地模式
+function startLocalMode() {
+    isLocalMode = true;
+    currentUser = { id: 'local_user', name: '本地用戶', email: 'local@localhost' };
+    localStorage.setItem('localMode', 'true');
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    showSignedInState();
+    console.log('已切換到本地模式');
+}
+
 // 登出功能
 function logout() {
     if (confirm('確定要登出嗎？')) {
         // 清除用戶資訊
         currentUser = null;
+        isLocalMode = false;
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('localMode');
         
         // Google 登出
         if (window.google && window.google.accounts) {
             google.accounts.id.disableAutoSelect();
         }
         
-        // 顯示登入頁面
-        showLoginPage();
+        // 顯示未登入狀態
+        showNotSignedInState();
         
         console.log('用戶已登出');
     }
