@@ -1,6 +1,8 @@
 // 表格UI邏輯 - 適配昨天的設計
 
-let currentMonth = new Date().toISOString().slice(0, 7);
+if (!window.currentMonth) {
+    window.currentMonth = new Date().toISOString().slice(0, 7);
+}
 let expenseTypes = ['器材租賃費用', '交通費', '餐費', '雜費', '人事費', '後製費'];
 let projects = [];
 let monthlyExpenses = {};
@@ -46,20 +48,7 @@ function initializeAppAfterLogin() {
 }
 
 // 開始本地模式（從按鈕調用）
-function startLocalMode() {
-    console.log('切換到本地模式...');
-    
-    // 設定本地模式標記
-    window.isLocalMode = true;
-    localStorage.setItem('localMode', 'true');
-    
-    // 設定本地用戶
-    window.currentUser = { id: 'local_user', name: '本地用戶', email: 'local@localhost' };
-    localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
-    
-    // 初始化本地模式UI
-    initializeLocalMode();
-}
+// 刪除與 auth.js 重複的 startLocalMode，改由 auth.js 負責
 
 // 本地模式初始化
 function initializeLocalMode() {
@@ -99,7 +88,7 @@ function initializeMonthTabs() {
         
         const tab = document.createElement('div');
         tab.className = 'month-tab';
-        if (monthValue === currentMonth) {
+        if (monthValue === window.currentMonth) {
             tab.classList.add('active');
         }
         tab.innerHTML = `
@@ -110,7 +99,7 @@ function initializeMonthTabs() {
         `;
         tab.addEventListener('click', (e) => {
             if (!e.target.closest('.delete-month')) {
-                selectMonth(monthValue);
+                selectMonth(monthValue, tab);
             }
         });
         
@@ -119,14 +108,16 @@ function initializeMonthTabs() {
 }
 
 // 選擇月份
-function selectMonth(month) {
-    currentMonth = month;
+function selectMonth(month, tabElement) {
+    window.currentMonth = month;
     
     // 更新標籤狀態
     document.querySelectorAll('.month-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    event.currentTarget.classList.add('active');
+    if (tabElement) {
+        tabElement.classList.add('active');
+    }
     
     // 重新載入數據
     loadProjects();
@@ -153,7 +144,11 @@ function setupEventListeners() {
         console.log('綁定本地模式按鈕');
         useLocalBtn.addEventListener('click', function() {
             console.log('本地模式按鈕被點擊');
-            startLocalMode();
+            if (window.startLocalMode) {
+                window.startLocalMode();
+            } else {
+                initializeLocalMode();
+            }
         });
     } else {
         console.log('未找到本地模式按鈕');
@@ -243,13 +238,13 @@ function updateTableHeaders() {
 
 // 載入專案數據
 function loadProjects() {
-    const storedProjects = localStorage.getItem(`projects_${currentMonth}`);
+    const storedProjects = localStorage.getItem(`projects_${window.currentMonth}`);
     projects = storedProjects ? JSON.parse(storedProjects) : [];
 }
 
 // 載入月度支出數據
 function loadMonthlyExpenses() {
-    const storedExpenses = localStorage.getItem(`monthlyExpenses_${currentMonth}`);
+    const storedExpenses = localStorage.getItem(`monthlyExpenses_${window.currentMonth}`);
     const expenses = storedExpenses ? JSON.parse(storedExpenses) : {};
     
     // 預設支出項目
@@ -527,11 +522,11 @@ function addExpenseType() {
 
 // 保存相關函數
 function saveProjects() {
-    localStorage.setItem(`projects_${currentMonth}`, JSON.stringify(projects));
+    localStorage.setItem(`projects_${window.currentMonth}`, JSON.stringify(projects));
 }
 
 function saveMonthlyExpenses() {
-    localStorage.setItem(`monthlyExpenses_${currentMonth}`, JSON.stringify(monthlyExpenses));
+    localStorage.setItem(`monthlyExpenses_${window.currentMonth}`, JSON.stringify(monthlyExpenses));
 }
 
 function saveExpenseTypes() {
@@ -541,7 +536,7 @@ function saveExpenseTypes() {
 // 導出數據
 function exportData() {
     const allData = {
-        month: currentMonth,
+        month: window.currentMonth,
         projects: projects,
         monthlyExpenses: monthlyExpenses,
         expenseTypes: expenseTypes,
@@ -554,7 +549,7 @@ function exportData() {
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `專案收支_${currentMonth}.json`;
+    link.download = `專案收支_${window.currentMonth}.json`;
     link.click();
     
     URL.revokeObjectURL(url);
@@ -637,4 +632,4 @@ window.exportData = exportData;
 window.addMonthlyExpense = addMonthlyExpense;
 window.loadExpenseCategoryOptions = loadExpenseCategoryOptions;
 window.showTab = showTab;
-window.startLocalMode = startLocalMode;
+// 不再導出本檔的 startLocalMode，避免覆蓋 auth.js 的同名函式

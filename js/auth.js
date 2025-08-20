@@ -114,6 +114,11 @@ function startLocalMode() {
     localStorage.setItem('localMode', 'true');
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     showSignedInState();
+    if (typeof initializeLocalMode === 'function') {
+        initializeLocalMode();
+    } else if (typeof initializeAppAfterLogin === 'function') {
+        initializeAppAfterLogin();
+    }
     console.log('已切換到本地模式');
 }
 
