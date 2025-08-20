@@ -70,7 +70,9 @@ function showMainApp() {
     document.getElementById('userAvatar').src = currentUser.picture;
     
     // 初始化應用數據
-    initializeAppAfterLogin();
+    if (typeof initializeAppAfterLogin === 'function') {
+        initializeAppAfterLogin();
+    }
 }
 
 // 登出功能

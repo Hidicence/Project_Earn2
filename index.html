@@ -44,6 +44,19 @@
                 </div>
             </div>
             
+            <!-- 本地查看模式 -->
+            <div class="mt-4">
+                <hr>
+                <div class="text-center">
+                    <p class="text-muted small mb-2">或者</p>
+                    <button id="useLocalOnlyBtn" class="btn btn-outline-secondary">
+                        <i class="fas fa-hdd me-2"></i>
+                        暫時使用本地模式
+                    </button>
+                    <p class="text-muted small mt-2">僅在本機儲存，不同步雲端</p>
+                </div>
+            </div>
+            
             <div class="mt-4 text-center">
                 <small class="text-muted">
                     <i class="fas fa-info-circle"></i> 
@@ -62,13 +75,27 @@
                     <i class="fas fa-chart-line me-2"></i>專案收支管理
                 </a>
                 
-                <div class="navbar-nav ms-auto">
+                <!-- 月份選擇 -->
+                <div class="navbar-nav me-auto">
+                    <div class="nav-item">
+                        <select id="monthSelector" class="form-select form-select-sm bg-light" onchange="onMonthChange()">
+                            <!-- 月份選項會動態生成 -->
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 用戶信息 -->
+                <div class="navbar-nav">
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                             <img id="userAvatar" src="" alt="User" class="rounded-circle me-2" width="32" height="32">
                             <span id="userName">使用者</span>
                         </a>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportData()">
+                                <i class="fas fa-download me-2"></i>匯出數據
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" onclick="logout()">
                                 <i class="fas fa-sign-out-alt me-2"></i>登出
                             </a></li>
@@ -80,187 +107,190 @@
 
         <!-- 主內容區域 -->
         <div class="container-fluid mt-3">
-            <div class="row">
-                <!-- 側邊欄 -->
-                <div class="col-lg-2 col-md-3">
-                    <div class="card">
-                        <div class="card-body p-0">
-                            <div class="list-group list-group-flush">
-                                <a href="#" class="list-group-item list-group-item-action active" onclick="showTab('projects')">
-                                    <i class="fas fa-project-diagram me-2"></i>專案管理
-                                </a>
-                                <a href="#" class="list-group-item list-group-item-action" onclick="showTab('company-expenses')">
-                                    <i class="fas fa-building me-2"></i>公司支出
-                                </a>
-                                <a href="#" class="list-group-item list-group-item-action" onclick="showTab('statistics')">
-                                    <i class="fas fa-chart-bar me-2"></i>統計圖表
-                                </a>
-                                <a href="#" class="list-group-item list-group-item-action" onclick="showTab('settings')">
-                                    <i class="fas fa-cog me-2"></i>支出項目
-                                </a>
+            <!-- 快速統計 -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-arrow-trend-up fa-2x mb-2"></i>
+                            <h4 id="quickTotalIncome">$0</h4>
+                            <small>總收入</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                            <h4 id="quickTotalExpenses">$0</h4>
+                            <small>總支出</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-coins fa-2x mb-2"></i>
+                            <h4 id="quickNetProfit">$0</h4>
+                            <small>淨利潤</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-percentage fa-2x mb-2"></i>
+                            <h4 id="quickAvgRatio">0%</h4>
+                            <small>平均營利比</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按鈕 -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-primary" onclick="addNewProject()">
+                            <i class="fas fa-plus-circle me-1"></i>新增專案
+                        </button>
+                        <button class="btn btn-secondary" onclick="addExpenseType()">
+                            <i class="fas fa-tags me-1"></i>新增支出類型
+                        </button>
+                        <button class="btn btn-info" onclick="toggleChartsView()">
+                            <i class="fas fa-chart-bar me-1"></i>圖表分析
+                        </button>
+                        <button class="btn btn-success" onclick="addMonthlyExpense()">
+                            <i class="fas fa-building me-1"></i>公司支出
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 專案收支表格 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">專案收支明細</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm projects-table mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="min-width: 150px;">專案名稱</th>
+                                    <th class="expense-col">器材租賃費用</th>
+                                    <th class="expense-col">交通費</th>
+                                    <th class="expense-col">餐費</th>
+                                    <th class="expense-col">雜費</th>
+                                    <th class="expense-col">人事費</th>
+                                    <th class="expense-col">後製費</th>
+                                    <th class="total-col">支出加總</th>
+                                    <th class="income-col">案件總收入(含稅)</th>
+                                    <th class="profit-col">專案總盈虧</th>
+                                    <th class="profit-ratio-col">營利比</th>
+                                    <th class="payment-col">收款</th>
+                                    <th style="width: 100px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectsTableBody">
+                                <!-- 動態生成專案行 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 當月公司支出 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">當月公司支出統計</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label small">稅金</label>
+                                    <input type="number" id="tax" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">公益</label>
+                                    <input type="number" id="charity" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">器材購買</label>
+                                    <input type="number" id="equipment" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">雜支</label>
+                                    <input type="number" id="miscellaneous" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">薪資</label>
+                                    <input type="number" id="salary" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">貸款</label>
+                                    <input type="number" id="loan" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">房租水電</label>
+                                    <input type="number" id="rent" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">BNI</label>
+                                    <input type="number" id="bni" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">諮詢商會</label>
+                                    <input type="number" id="consulting" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">保險</label>
+                                    <input type="number" id="insurance" class="form-control form-control-sm monthly-input" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-stats">
+                                <div class="stat-item">
+                                    <strong>當月支出總額：</strong>
+                                    <span id="monthlyExpenses" class="text-danger">$0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>當月收款總額：</strong>
+                                    <span id="monthlyIncome" class="text-success">$0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>調整後盈餘：</strong>
+                                    <span id="adjustedProfit" class="fw-bold">$0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 主內容 -->
-                <div class="col-lg-10 col-md-9">
-                    <!-- 月份選擇 -->
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-calendar-alt me-2"></i>
-                                        <span id="currentTabTitle">專案管理</span>
-                                    </h5>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <label class="form-label me-2">選擇月份：</label>
-                                    <input type="month" id="monthSelector" class="form-control d-inline-block w-auto" onchange="onMonthChange()">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 專案管理頁面 -->
-                    <div id="projectsTab" class="tab-content">
-                        <!-- 月度統計卡片 -->
-                        <div class="row mb-4">
-                            <div class="col-md-3">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-dollar-sign fa-2x mb-2"></i>
-                                        <h4 id="totalRevenue">$0</h4>
-                                        <small>總收入</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-danger text-white">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
-                                        <h4 id="totalExpenses">$0</h4>
-                                        <small>專案支出</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-info text-white">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-chart-line fa-2x mb-2"></i>
-                                        <h4 id="adjustedProfit">$0</h4>
-                                        <small>調整後盈餘</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-warning text-white">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-percentage fa-2x mb-2"></i>
-                                        <h4 id="adjustedProfitMargin">0%</h4>
-                                        <small>調整後營利比</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 專案列表 -->
+            <!-- 圖表分析區域 (可切換顯示) -->
+            <div id="chartsSection" class="d-none mt-4">
+                <div class="row">
+                    <div class="col-md-8">
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">專案列表</h5>
-                                <button class="btn btn-primary" onclick="showAddProjectModal()">
-                                    <i class="fas fa-plus me-1"></i>新增專案
-                                </button>
+                            <div class="card-header">
+                                <h5 class="mb-0">專案收支比較</h5>
                             </div>
                             <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>專案名稱</th>
-                                                <th>總收入</th>
-                                                <th>總支出</th>
-                                                <th>盈餘</th>
-                                                <th>營利比</th>
-                                                <th>操作</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="projectsTableBody">
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <canvas id="projectComparisonChart"></canvas>
                             </div>
                         </div>
                     </div>
-
-                    <!-- 公司支出頁面 -->
-                    <div id="company-expensesTab" class="tab-content d-none">
+                    <div class="col-md-4">
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">公司營運支出</h5>
-                                <button class="btn btn-primary" onclick="showAddCompanyExpenseModal()">
-                                    <i class="fas fa-plus me-1"></i>新增支出
-                                </button>
+                            <div class="card-header">
+                                <h5 class="mb-0">支出分布</h5>
                             </div>
                             <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>支出項目</th>
-                                                <th>金額</th>
-                                                <th>說明</th>
-                                                <th>日期</th>
-                                                <th>操作</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="companyExpensesTableBody">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 統計圖表頁面 -->
-                    <div id="statisticsTab" class="tab-content d-none">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">專案收支比較</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="projectComparisonChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">支出分布</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="expenseDistributionChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 支出項目設定頁面 -->
-                    <div id="settingsTab" class="tab-content d-none">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">支出項目管理</h5>
-                                <button class="btn btn-primary" onclick="showAddCategoryModal()">
-                                    <i class="fas fa-plus me-1"></i>新增項目
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <div id="categoriesList" class="row">
-                                </div>
+                                <canvas id="expenseDistributionChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -284,149 +314,18 @@
                             <input type="text" class="form-control" name="name" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">專案描述</label>
-                            <textarea class="form-control" name="description" rows="3"></textarea>
+                            <label class="form-label">案件總收入(含稅) *</label>
+                            <input type="number" class="form-control" name="totalIncome" min="0" step="0.01" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">總收入 *</label>
-                            <input type="number" class="form-control" name="totalRevenue" min="0" step="0.01" required>
+                            <label class="form-label">收款金額</label>
+                            <input type="number" class="form-control" name="payment" min="0" step="0.01" value="0">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="addProject()">新增專案</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 專案支出 Modal -->
-    <div class="modal fade" id="projectExpensesModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="projectExpensesTitle">專案支出管理</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- 新增支出表單 -->
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h6 class="mb-0">新增支出</h6>
-                        </div>
-                        <div class="card-body">
-                            <form id="addExpenseForm" class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">支出項目</label>
-                                    <select class="form-select" name="categoryId" required>
-                                        <option value="">選擇項目</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">金額</label>
-                                    <input type="number" class="form-control" name="amount" min="0" step="0.01" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">說明</label>
-                                    <input type="text" class="form-control" name="description">
-                                </div>
-                                <div class="col-12">
-                                    <button type="button" class="btn btn-success" onclick="addProjectExpense()">
-                                        <i class="fas fa-plus me-1"></i>新增支出
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- 支出列表 -->
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>支出項目</th>
-                                    <th>金額</th>
-                                    <th>說明</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="projectExpensesTableBody">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 其他 Modals -->
-    <div class="modal fade" id="addCompanyExpenseModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">新增公司支出</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addCompanyExpenseForm">
-                        <div class="mb-3">
-                            <label class="form-label">支出項目 *</label>
-                            <input type="text" class="form-control" name="category" required 
-                                   list="companyExpenseCategories"
-                                   placeholder="輸入或選擇支出項目">
-                            <datalist id="companyExpenseCategories">
-                                <option value="稅金">
-                                <option value="公益">
-                                <option value="器材購買">
-                                <option value="雜支">
-                                <option value="薪資">
-                                <option value="貸款">
-                                <option value="房租水電">
-                                <option value="BNI">
-                                <option value="諮詢商會">
-                            </datalist>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">金額 *</label>
-                            <input type="number" class="form-control" name="amount" min="0" step="0.01" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">說明</label>
-                            <textarea class="form-control" name="description" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="addCompanyExpense()">新增支出</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="addCategoryModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">新增支出項目</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addCategoryForm">
-                        <div class="mb-3">
-                            <label class="form-label">項目名稱 *</label>
-                            <input type="text" class="form-control" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">項目描述</label>
-                            <textarea class="form-control" name="description" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="addCategory()">新增項目</button>
+                    <button type="button" class="btn btn-primary" onclick="submitNewProject()">新增專案</button>
                 </div>
             </div>
         </div>
@@ -436,7 +335,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
-    <script src="js/ui.js"></script>
+    <script src="js/tableUI.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/app.js"></script>
 </body>
