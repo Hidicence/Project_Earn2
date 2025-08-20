@@ -121,6 +121,7 @@ function initializeMonthTabs() {
 // 選擇月份
 function selectMonth(month, tabElement) {
     window.currentMonth = month;
+    if (window.syncManager) window.syncManager.onMonthChange();
     
     // 更新標籤狀態
     document.querySelectorAll('.month-tab').forEach(tab => {
@@ -564,14 +565,17 @@ function addExpenseType() {
 // 保存相關函數
 function saveProjects() {
     localStorage.setItem(`projects_${window.currentMonth}`, JSON.stringify(projects));
+    if (window.syncManager) window.syncManager.onLocalChange();
 }
 
 function saveMonthlyExpenses() {
     localStorage.setItem(`monthlyExpenses_${window.currentMonth}`, JSON.stringify(monthlyExpenses));
+    if (window.syncManager) window.syncManager.onLocalChange();
 }
 
 function saveExpenseTypes() {
     localStorage.setItem('expenseTypes', JSON.stringify(expenseTypes));
+    if (window.syncManager) window.syncManager.onLocalChange();
 }
 
 // 導出數據

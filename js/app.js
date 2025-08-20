@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化認證系統
     // initAuth() 會在 auth.js 中自動調用
+
+    // 啟動同步（若已載入 syncManager 且有端點則會運作）
+    try { if (window.syncManager) window.syncManager.start(); } catch (_) {}
 });
 
 // 檢查瀏覽器支援
