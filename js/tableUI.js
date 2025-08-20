@@ -4,19 +4,18 @@ let currentMonth = new Date().toISOString().slice(0, 7);
 let expenseTypes = ['器材租賃費用', '交通費', '餐費', '雜費', '人事費', '後製費'];
 let projects = [];
 let monthlyExpenses = {};
-let currentUser = null;
-let isLocalMode = false;
+// currentUser 和 isLocalMode 在 auth.js 中已聲明
 
 // 初始化應用
 function initializeAppAfterLogin() {
     console.log('用戶已登入，初始化應用...');
     
     // 設定用戶信息
-    if (currentUser) {
-        document.getElementById('userName').textContent = currentUser.name || '本地用戶';
-        document.getElementById('userEmail').textContent = currentUser.email || '';
-        if (currentUser.picture) {
-            document.getElementById('userPhoto').src = currentUser.picture;
+    if (window.currentUser) {
+        document.getElementById('userName').textContent = window.currentUser.name || '本地用戶';
+        document.getElementById('userEmail').textContent = window.currentUser.email || '';
+        if (window.currentUser.picture) {
+            document.getElementById('userPhoto').src = window.currentUser.picture;
         }
         
         // 顯示已登入狀態
@@ -51,12 +50,12 @@ function startLocalMode() {
     console.log('切換到本地模式...');
     
     // 設定本地模式標記
-    isLocalMode = true;
+    window.isLocalMode = true;
     localStorage.setItem('localMode', 'true');
     
     // 設定本地用戶
-    currentUser = { id: 'local_user', name: '本地用戶', email: 'local@localhost' };
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    window.currentUser = { id: 'local_user', name: '本地用戶', email: 'local@localhost' };
+    localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
     
     // 初始化本地模式UI
     initializeLocalMode();
