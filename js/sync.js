@@ -16,6 +16,19 @@
         return fromLS || '';
     }
 
+    function buildUrl(path) {
+        const base = getEndpoint();
+        if (!base) return '';
+        // 若為 Google Apps Script exec URL，改用 action=sync/snapshot
+        if (/\/exec(\?|$)/.test(base)) {
+            const sep = base.includes('?') ? '&' : '?';
+            const action = path.replace(/^\//, '');
+            return `${base}${sep}action=${encodeURIComponent(action)}`;
+        }
+        // 一般 REST 風格路徑
+        return base.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+    }
+
     function buildStandardizedSnapshot(month) {
         // 轉換為 Sheets 友善表格：Projects / ProjectExpenses / CompanyExpenses / ExpenseCategories
         const userId = getCurrentUserIdSafe();
@@ -168,19 +181,22 @@
             this._pushTimer = setTimeout(() => { this.push().catch(() => {}); }, 800);
         },
         async push() {
-            const endpoint = getEndpoint();
-            if (!endpoint) return; // 未配置端點則跳過
+            const url = buildUrl('sync');
+            if (!url) return; // 未配置端點則跳過
             const month = window.currentMonth;
             const payload = buildStandardizedSnapshot(month);
-            await httpPostJson(`${endpoint}/sync`, payload);
+            await httpPostJson(url, payload);
         },
         async pull() {
-            const endpoint = getEndpoint();
-            if (!endpoint) return; // 未配置端點則跳過
+            const baseUrl = buildUrl('snapshot');
+            if (!baseUrl) return; // 未配置端點則跳過
             const userId = getCurrentUserIdSafe();
             const month = window.currentMonth;
             const localLU = Number(localStorage.getItem(`lastUpdated_${month}`) || 0);
-            const data = await httpGetJson(`${endpoint}/snapshot?userId=${encodeURIComponent(userId)}&month=${encodeURIComponent(month)}&since=${localLU}`);
+            const url = /action=snapshot/.test(baseUrl)
+                ? `${baseUrl}&userId=${encodeURIComponent(userId)}&month=${encodeURIComponent(month)}&since=${localLU}`
+                : `${baseUrl}?userId=${encodeURIComponent(userId)}&month=${encodeURIComponent(month)}&since=${localLU}`;
+            const data = await httpGetJson(url);
             if (data && Number(data.lastUpdated || 0) > localLU) {
                 applySnapshotToLocal(month, data);
                 // 重新渲染
