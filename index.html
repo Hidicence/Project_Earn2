@@ -7,9 +7,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google OAuth 在本地文件模式下被禁用
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    -->
 </head>
 <body>
     <div class="container">
@@ -20,19 +18,32 @@
             <div class="user-status" id="userStatus">
                 <div class="not-signed-in" id="notSignedIn">
                     <div class="google-login-container" id="googleLoginContainer">
-                        <!-- Google登入在本地文件模式下會出錯，直接顯示本地模式按鈕 -->
-                        <div class="local-mode-info">
-                            <p>本地測試模式 - 請點擊下方按鈕開始使用</p>
+                        <div class="google-signin-wrapper">
+                            <h4>使用Google帳號登入</h4>
+                            <div id="g_id_onload" 
+                                 data-client_id="343933262520-kc08t2crdet0f0l2q7d7gno08bkmepjl.apps.googleusercontent.com"
+                                 data-callback="handleCredentialResponse"
+                                 data-auto_prompt="false">
+                            </div>
+                            <div class="g_id_signin" 
+                                 data-type="standard"
+                                 data-shape="rectangular"
+                                 data-theme="filled_blue"
+                                 data-text="signin_with"
+                                 data-size="large"
+                                 data-logo_alignment="left">
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="setup-required" id="setupRequired" style="display: block;">
-                        <div class="setup-message">
-                            <i class="fas fa-laptop"></i>
-                            <h4>本地測試模式</h4>
-                            <p>在本地環境中使用，數據將保存在瀏覽器本地存儲</p>
+                    <div class="alternative-login">
+                        <div class="divider">
+                            <span>或</span>
+                        </div>
+                        <div class="local-mode-option">
+                            <p>無法使用Google登入？</p>
                             <button id="useLocalOnlyBtn" class="btn tertiary">
-                                <i class="fas fa-play"></i> 開始使用本地模式
+                                <i class="fas fa-laptop"></i> 使用本地模式
                             </button>
                         </div>
                     </div>
@@ -58,6 +69,10 @@
             </div>
             
             <div class="header-buttons">
+                <button id="themeToggleBtn" class="btn theme-toggle" title="切換主題">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                    <span id="themeText">暗色模式</span>
+                </button>
                 <button id="addProjectBtn" class="btn primary">
                     <i class="fas fa-plus-circle"></i>
                     新增專案
@@ -151,7 +166,7 @@
                     <table id="projectsTable" class="projects-table">
                         <thead>
                             <tr>
-                                <th>專案名稱</th>
+                                <th class="project-name-col">專案名稱</th>
                                 <th class="expense-col" id="expenseCol1">器材租賃費用</th>
                                 <th class="expense-col" id="expenseCol2">交通費</th>
                                 <th class="expense-col" id="expenseCol3">餐費</th>
@@ -162,9 +177,10 @@
                                 <th class="income-col">案件總收入(含稅)</th>
                                 <th class="profit-col">專案總盈虧 <span class="info-icon" data-tip="公式：專案總盈虧 = 案件總收入 − 支出加總">?</span></th>
                                 <th class="profit-ratio-col">專案營利比 <span class="info-icon" data-tip="公式：專案營利比 = 專案總盈虧 ÷ 案件總收入 × 100%">?</span></th>
-                                <th class="company-profit-col">公司盈虧 <span class="info-icon" data-tip="公式：公司盈虧 = 專案總盈虧 − (當月公司支出總額 ÷ 當月專案數)">?</span></th>
+                                <th class="company-profit-col">本月營運盈虧比 <span class="info-icon" data-tip="公式：本月營運盈虧比 = (案件總收入 − 配比營運支出) ÷ 案件總收入 × 100%">?</span></th>
                                 <th class="payment-col">收款</th>
-                                <th>操作</th>
+                                <th class="outsourcing-col">後製外發</th>
+                                <th class="action-col">操作</th>
                             </tr>
                         </thead>
                         <tbody id="projectsTableBody">
@@ -281,6 +297,54 @@
                     <input type="text" id="newExpenseTypeInput" placeholder="輸入類型名稱">
                     <button id="confirmAddExpenseTypeBtn" class="btn secondary"><i class="fas fa-plus"></i> 新增</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定義確認對話框 Modal -->
+    <div id="customConfirmModal" class="modal custom-dialog">
+        <div class="modal-content dialog-content">
+            <div class="dialog-header">
+                <h3 id="confirmTitle">確認操作</h3>
+            </div>
+            <div class="dialog-body">
+                <p id="confirmMessage">確定要執行此操作嗎？</p>
+            </div>
+            <div class="dialog-footer">
+                <button id="confirmCancelBtn" class="btn btn-outline">取消</button>
+                <button id="confirmOkBtn" class="btn btn-danger">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定義輸入對話框 Modal -->
+    <div id="customPromptModal" class="modal custom-dialog">
+        <div class="modal-content dialog-content">
+            <div class="dialog-header">
+                <h3 id="promptTitle">輸入內容</h3>
+            </div>
+            <div class="dialog-body">
+                <p id="promptMessage">請輸入內容：</p>
+                <input type="text" id="promptInput" class="form-input" placeholder="">
+            </div>
+            <div class="dialog-footer">
+                <button id="promptCancelBtn" class="btn btn-outline">取消</button>
+                <button id="promptOkBtn" class="btn primary">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定義提示對話框 Modal -->
+    <div id="customAlertModal" class="modal custom-dialog">
+        <div class="modal-content dialog-content">
+            <div class="dialog-header">
+                <h3 id="alertTitle">提示</h3>
+            </div>
+            <div class="dialog-body">
+                <p id="alertMessage">操作完成</p>
+            </div>
+            <div class="dialog-footer">
+                <button id="alertOkBtn" class="btn primary">確定</button>
             </div>
         </div>
     </div>
