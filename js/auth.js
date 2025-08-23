@@ -35,6 +35,9 @@ function handleCredentialResponse(response) {
             loginTime: new Date().toISOString()
         };
         
+        // 獲取 Google Sheets API 權限
+        await requestSheetsPermission();
+        
         // 保存用戶資訊到 localStorage
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         
@@ -151,6 +154,50 @@ function getCurrentUserId() {
 // 檢查是否已登入
 function isLoggedIn() {
     return currentUser !== null;
+}
+
+// 請求 Google Sheets API 權限
+async function requestSheetsPermission() {
+    try {
+        if (!window.gapi) {
+            console.warn('Google API 尚未載入，跳過權限請求');
+            return false;
+        }
+        
+        // 載入 OAuth 模塊
+        await new Promise((resolve) => {
+            gapi.load('auth2', resolve);
+        });
+        
+        // 初始化 OAuth
+        const authInstance = await gapi.auth2.init({
+            client_id: '343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com'
+        });
+        
+        // 請求權限
+        const user = await authInstance.signIn({
+            scope: 'https://www.googleapis.com/auth/spreadsheets'
+        });
+        
+        // 獲取 access token
+        const authResponse = user.getAuthResponse();
+        if (authResponse && authResponse.access_token) {
+            currentUser.accessToken = authResponse.access_token;
+            console.log('Google Sheets API 權限獲取成功');
+            return true;
+        }
+        
+        return false;
+        
+    } catch (error) {
+        console.error('獲取 Google Sheets 權限失敗:', error);
+        return false;
+    }
+}
+
+// 檢查是否有 Sheets API 權限
+function hasSheetsPermission() {
+    return currentUser && currentUser.accessToken;
 }
 
 // 頁面載入時初始化認證

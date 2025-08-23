@@ -11,9 +11,14 @@
       "Bash(rm:*)",
       "Bash(copy styles.css \"C:\\Users\\User\\Desktop\\0820projectearn2\\css\\styles.css\")",
       "Bash(cp:*)",
-      "Bash(start index.html)"
+      "Bash(start index.html)",
+      "Bash(python:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\User\\Desktop"
+    ]
   }
 }

@@ -49,6 +49,12 @@ function initializeAppAfterLogin() {
     
     // 月份按鈕事件現在在 setupEventListeners 中統一處理
     
+    // 檢查是否有保存的試算表並同步
+    await checkAndSyncFromSheets();
+    
+    // 檢查是否需要顯示同步按鈕
+    showSyncButton();
+    
     console.log('應用初始化完成');
 }
 
@@ -379,6 +385,16 @@ function setupEventListeners() {
         });
     } else {
         console.log('未找到匯出按鈕');
+    }
+    
+    // 同步按鈕
+    const syncBtn = document.getElementById('syncBtn');
+    if (syncBtn && !syncBtn.hasAttribute('data-listener')) {
+        syncBtn.addEventListener('click', function() {
+            console.log('同步按鈕被點擊');
+            syncWithSheets();
+        });
+        syncBtn.setAttribute('data-listener', 'true');
     }
 
     // 搜尋/篩選
@@ -911,15 +927,69 @@ function saveExpenseTypes() {
 }
 
 // 導出數據
-function exportData() {
-    const allData = {
-        month: window.currentMonth,
-        projects: projects,
-        monthlyExpenses: monthlyExpenses,
-        expenseTypes: expenseTypes,
-        exportDate: new Date().toISOString()
-    };
-    
+async function exportData() {
+    try {
+        const allData = {
+            month: window.currentMonth,
+            projects: projects,
+            monthlyExpenses: monthlyExpenses,
+            expenseTypes: expenseTypes,
+            exportDate: new Date().toISOString()
+        };
+        
+        // 檢查是否已登入 Google
+        if (!window.currentUser) {
+            // 回退到 JSON 導出
+            exportAsJSON(allData);
+            return;
+        }
+        
+        // 嘗試創建 Google 試算表
+        showToast('正在創建 Google 試算表...', 'info');
+        
+        const title = `專案收支管理_${window.currentMonth}_${new Date().getTime()}`;
+        
+        try {
+            const sheet = await window.SheetsAPI.createSheet(title, allData);
+            
+            // 保存試算表 ID
+            window.SheetsAPI.saveSpreadsheetId(sheet.id);
+            
+            // 顯示同步按鈕
+            onSheetCreated();
+            
+            // 在新視窗中開啟試算表
+            window.open(sheet.url, '_blank');
+            
+            showToast(`試算表創建成功！已在新視窗開啟`, 'success');
+            
+        } catch (sheetsError) {
+            console.error('Google Sheets 導出失敗:', sheetsError);
+            
+            // 詢問用戶是否要重新授權
+            const shouldReauth = await customConfirm(
+                'Google Sheets 導出失敗。可能需要重新授權。是否要重新授權？',
+                '導出失敗'
+            );
+            
+            if (shouldReauth) {
+                await reauthorizeSheets();
+                // 重新嘗試導出
+                await exportData();
+            } else {
+                // 回退到 JSON 導出
+                exportAsJSON(allData);
+            }
+        }
+        
+    } catch (error) {
+        console.error('導出數據失敗:', error);
+        showToast('導出失敗: ' + error.message, 'error');
+    }
+}
+
+// 導出為 JSON (回退方案)
+function exportAsJSON(allData) {
     const dataStr = JSON.stringify(allData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -930,17 +1000,181 @@ function exportData() {
     link.click();
     
     URL.revokeObjectURL(url);
-    showToast('數據導出成功！');
+    showToast('已導出為 JSON 文件', 'info');
 }
 
-// 顯示提示
-function showToast(message) {
+// 重新授權 Sheets
+async function reauthorizeSheets() {
+    try {
+        const hasPermission = await requestSheetsPermission();
+        if (hasPermission) {
+            showToast('授權成功！', 'success');
+        } else {
+            showToast('授權失敗', 'error');
+        }
+    } catch (error) {
+        console.error('重新授權失敗:', error);
+        showToast('授權失敗: ' + error.message, 'error');
+    }
+}
+
+// 檢查並從 Google Sheets 同步數據
+async function checkAndSyncFromSheets() {
+    try {
+        // 檢查是否已登入 Google 和是否有保存的試算表
+        if (!window.currentUser || !window.currentUser.accessToken) {
+            console.log('用戶未登入或無 Google 權限，跳過同步');
+            return;
+        }
+        
+        const savedSpreadsheetId = window.SheetsAPI.getSavedSpreadsheetId();
+        if (!savedSpreadsheetId) {
+            console.log('未找到保存的試算表 ID');
+            return;
+        }
+        
+        console.log('發現保存的試算表，開始同步...', savedSpreadsheetId);
+        
+        // 從試算表讀取數據
+        const sheetsData = await window.SheetsAPI.readFromSheet(savedSpreadsheetId);
+        
+        // 應用數據到本地
+        if (sheetsData.projects) {
+            projects = sheetsData.projects;
+            saveProjects();
+        }
+        
+        if (sheetsData.monthlyExpenses) {
+            monthlyExpenses = sheetsData.monthlyExpenses;
+            saveMonthlyExpenses();
+        }
+        
+        if (sheetsData.expenseTypes && sheetsData.expenseTypes.length > 0) {
+            expenseTypes = sheetsData.expenseTypes;
+            saveExpenseTypes();
+            updateTableHeaders();
+        }
+        
+        // 重新渲染界面
+        renderProjectsTable();
+        updateStatistics();
+        
+        showToast('已從 Google 試算表同步數據', 'success');
+        console.log('Google Sheets 同步完成');
+        
+        // 顯示同步按鈕
+        showSyncButton();
+        
+    } catch (error) {
+        console.error('從 Google Sheets 同步數據失敗:', error);
+        // 不顯示錯誤消息給用戶，避免打斷正常流程
+    }
+}
+
+// 顯示或隱藏同步按鈕
+function showSyncButton() {
+    const syncBtn = document.getElementById('syncBtn');
+    if (syncBtn && window.currentUser && window.SheetsAPI.getSavedSpreadsheetId()) {
+        syncBtn.style.display = 'flex';
+    } else if (syncBtn) {
+        syncBtn.style.display = 'none';
+    }
+}
+
+// 當創建新試算表時顯示同步按鈕
+function onSheetCreated() {
+    showSyncButton();
+}
+
+// 手動同步功能
+async function syncWithSheets() {
+    try {
+        const savedSpreadsheetId = window.SheetsAPI.getSavedSpreadsheetId();
+        if (!savedSpreadsheetId) {
+            showToast('未找到關聯的 Google 試算表', 'warning');
+            return;
+        }
+        
+        showToast('正在同步...', 'info');
+        
+        // 從試算表讀取最新數據
+        const sheetsData = await window.SheetsAPI.readFromSheet(savedSpreadsheetId);
+        
+        // 詢問用戶是要更新本地數據還是更新試算表
+        const syncDirection = await customConfirm(
+            '請選擇同步方向：\n確定 - 用試算表數據更新本地\n取消 - 用本地數據更新試算表',
+            '同步方向'
+        );
+        
+        if (syncDirection) {
+            // 用試算表數據更新本地
+            if (sheetsData.projects) {
+                projects = sheetsData.projects;
+                saveProjects();
+            }
+            
+            if (sheetsData.monthlyExpenses) {
+                monthlyExpenses = sheetsData.monthlyExpenses;
+                saveMonthlyExpenses();
+            }
+            
+            if (sheetsData.expenseTypes) {
+                expenseTypes = sheetsData.expenseTypes;
+                saveExpenseTypes();
+                updateTableHeaders();
+            }
+            
+            renderProjectsTable();
+            updateStatistics();
+            showToast('已用試算表數據更新本地', 'success');
+            
+        } else {
+            // 用本地數據更新試算表
+            const allData = {
+                month: window.currentMonth,
+                projects: projects,
+                monthlyExpenses: monthlyExpenses,
+                expenseTypes: expenseTypes
+            };
+            
+            await window.SheetsAPI.updateSheet(savedSpreadsheetId, allData);
+            showToast('已用本地數據更新試算表', 'success');
+        }
+        
+    } catch (error) {
+        console.error('同步失敗:', error);
+        showToast('同步失敗: ' + error.message, 'error');
+    }
+}
+
+// 顯示提示 (支援不同類型)
+function showToast(message, type = 'success') {
     const toast = document.createElement('div');
+    
+    let backgroundColor, icon;
+    switch (type) {
+        case 'error':
+            backgroundColor = 'var(--brand-error)';
+            icon = 'fas fa-times-circle';
+            break;
+        case 'info':
+            backgroundColor = 'var(--brand-primary)';
+            icon = 'fas fa-info-circle';
+            break;
+        case 'warning':
+            backgroundColor = 'var(--warning-color)';
+            icon = 'fas fa-exclamation-triangle';
+            break;
+        default: // success
+            backgroundColor = 'var(--brand-success)';
+            icon = 'fas fa-check-circle';
+    }
+    
     toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: var(--brand-success);
+        background: ${backgroundColor};
         color: white;
         padding: 1rem 1.5rem;
         border-radius: 0.5rem;
@@ -948,11 +1182,13 @@ function showToast(message) {
         z-index: 9999;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         animation: slideInRight 0.3s ease-out;
+        max-width: 400px;
     `;
-    toast.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>${message}`;
+    toast.innerHTML = `<i class="${icon}" style="margin-right: 0.5rem;"></i>${message}`;
     
     document.body.appendChild(toast);
     
+    const duration = type === 'error' ? 5000 : 3000;
     setTimeout(() => {
         toast.style.animation = 'slideOutRight 0.3s ease-in';
         setTimeout(() => {
@@ -960,7 +1196,7 @@ function showToast(message) {
                 toast.parentNode.removeChild(toast);
             }
         }, 300);
-    }, 3000);
+    }, duration);
 }
 
 // 添加CSS動畫

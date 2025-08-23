@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
 </head>
 <body>
     <div class="container">
@@ -84,6 +85,10 @@
                 <button id="exportBtn" class="btn tertiary">
                     <i class="fas fa-download"></i>
                     匯出數據
+                </button>
+                <button id="syncBtn" class="btn secondary" title="與 Google Sheets 同步" style="display: none;">
+                    <i class="fas fa-sync-alt"></i>
+                    同步
                 </button>
             </div>
         </header>
@@ -352,6 +357,7 @@
     <script src="js/auth.js"></script>
     <script src="js/sync.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/sheets.js"></script>
     <script src="js/tableUI.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/app.js"></script>
