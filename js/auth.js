@@ -35,11 +35,13 @@ async function handleCredentialResponse(response) {
             loginTime: new Date().toISOString()
         };
         
-        // 嘗試獲取 Google Sheets API 權限（非阻塞）
-        requestSheetsPermission().catch(error => {
-            console.warn('Google Sheets API 權限獲取失敗:', error);
-            // 不阻塞主要登入流程
-        });
+        // 延遲獲取 Google Sheets API 權限，避免阻塞登入
+        setTimeout(() => {
+            requestSheetsPermission().catch(error => {
+                console.warn('Google Sheets API 權限獲取失敗:', error);
+                // 不阻塞主要登入流程
+            });
+        }, 2000);
         
         // 保存用戶資訊到 localStorage
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -165,50 +167,84 @@ function isLoggedIn() {
     return currentUser !== null;
 }
 
-// 請求 Google Sheets API 權限
+// 請求 Google Sheets API 權限 (使用新的 Google Identity Services)
 async function requestSheetsPermission() {
     try {
-        if (!window.gapi) {
-            console.warn('Google API 尚未載入，延遲請求權限');
-            // 等待 Google API 載入
-            await waitForGoogleAPI();
+        // 檢查是否有 Google Identity Services
+        if (!window.google || !window.google.accounts) {
+            console.warn('Google Identity Services 尚未載入');
+            return false;
         }
         
-        // 載入 OAuth 模塊
-        await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('載入 OAuth 模塊超時')), 10000);
-            gapi.load('auth2', () => {
-                clearTimeout(timeout);
-                resolve();
-            });
-        });
-        
-        // 初始化 OAuth
-        const authInstance = await gapi.auth2.init({
-            client_id: '343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com'
-        });
-        
-        // 靜默嘗試獲取權限（避免彈窗）
-        const user = await authInstance.signIn({
+        // 使用 Google Identity Services 的 OAuth 流程
+        const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: '343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com',
             scope: 'https://www.googleapis.com/auth/spreadsheets',
-            prompt: 'none'  // 靜默授權
-        }).catch(() => null);
+            callback: (response) => {
+                if (response.access_token) {
+                    currentUser.accessToken = response.access_token;
+                    console.log('Google Sheets API 權限獲取成功');
+                    
+                    // 顯示成功訊息
+                    if (typeof showToast === 'function') {
+                        showToast('Google Sheets 權限獲取成功！現在可以使用試算表功能', 'success');
+                    }
+                } else {
+                    console.warn('Google Sheets API 權限獲取失敗');
+                }
+            },
+        });
         
-        if (user) {
-            // 獲取 access token
-            const authResponse = user.getAuthResponse();
-            if (authResponse && authResponse.access_token) {
-                currentUser.accessToken = authResponse.access_token;
-                console.log('Google Sheets API 權限獲取成功');
-                return true;
-            }
-        }
+        // 嘗試靜默獲取權限
+        client.requestAccessToken({prompt: 'none'});
         
-        console.log('Google Sheets API 權限獲取跳過（需要用戶手動授權）');
-        return false;
+        return true;
         
     } catch (error) {
         console.error('獲取 Google Sheets 權限失敗:', error);
+        return false;
+    }
+}
+
+// 手動請求 Google Sheets 權限（供用戶主動點擊）
+async function requestSheetsPermissionManually() {
+    try {
+        if (!window.google || !window.google.accounts) {
+            throw new Error('Google Identity Services 未載入');
+        }
+        
+        return new Promise((resolve) => {
+            const client = window.google.accounts.oauth2.initTokenClient({
+                client_id: '343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com',
+                scope: 'https://www.googleapis.com/auth/spreadsheets',
+                callback: (response) => {
+                    if (response.access_token) {
+                        currentUser.accessToken = response.access_token;
+                        console.log('Google Sheets API 權限獲取成功');
+                        
+                        if (typeof showToast === 'function') {
+                            showToast('Google Sheets 權限獲取成功！', 'success');
+                        }
+                        resolve(true);
+                    } else {
+                        console.warn('用戶拒絕了權限請求');
+                        if (typeof showToast === 'function') {
+                            showToast('需要 Google Sheets 權限才能使用試算表功能', 'warning');
+                        }
+                        resolve(false);
+                    }
+                },
+            });
+            
+            // 顯示權限請求彈窗
+            client.requestAccessToken({prompt: 'consent'});
+        });
+        
+    } catch (error) {
+        console.error('手動獲取 Google Sheets 權限失敗:', error);
+        if (typeof showToast === 'function') {
+            showToast('無法請求 Google Sheets 權限', 'error');
+        }
         return false;
     }
 }

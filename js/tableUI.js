@@ -396,6 +396,21 @@ function setupEventListeners() {
         });
         syncBtn.setAttribute('data-listener', 'true');
     }
+    
+    // Google Sheets 授權按鈕
+    const authSheetsBtn = document.getElementById('authSheetsBtn');
+    if (authSheetsBtn && !authSheetsBtn.hasAttribute('data-listener')) {
+        authSheetsBtn.addEventListener('click', async function() {
+            console.log('Google Sheets 授權按鈕被點擊');
+            const hasPermission = await reauthorizeSheets();
+            if (hasPermission) {
+                // 授權成功後隱藏授權按鈕
+                authSheetsBtn.style.display = 'none';
+                showSyncButton();
+            }
+        });
+        authSheetsBtn.setAttribute('data-listener', 'true');
+    }
 
     // 搜尋/篩選
     const projectSearch = document.getElementById('projectSearch');
@@ -966,20 +981,26 @@ async function exportData() {
         } catch (sheetsError) {
             console.error('Google Sheets 導出失敗:', sheetsError);
             
-            // 詢問用戶是否要重新授權
-            const shouldReauth = await customConfirm(
-                'Google Sheets 導出失敗。可能需要重新授權。是否要重新授權？',
-                '導出失敗'
-            );
-            
-            if (shouldReauth) {
-                await reauthorizeSheets();
-                // 重新嘗試導出
-                await exportData();
-            } else {
-                // 回退到 JSON 導出
-                exportAsJSON(allData);
+            // 檢查是否是權限問題
+            if (sheetsError.message && sheetsError.message.includes('權限')) {
+                // 詢問用戶是否要授權 Google Sheets
+                const shouldAuth = await customConfirm(
+                    '需要 Google Sheets 權限才能創建試算表。\n\n點擊「確定」授權使用 Google Sheets\n點擊「取消」下載 JSON 文件',
+                    '需要權限'
+                );
+                
+                if (shouldAuth && typeof requestSheetsPermissionManually === 'function') {
+                    const hasPermission = await requestSheetsPermissionManually();
+                    if (hasPermission) {
+                        // 重新嘗試導出
+                        await exportData();
+                        return;
+                    }
+                }
             }
+            
+            // 回退到 JSON 導出
+            exportAsJSON(allData);
         }
         
     } catch (error) {
@@ -1006,15 +1027,23 @@ function exportAsJSON(allData) {
 // 重新授權 Sheets
 async function reauthorizeSheets() {
     try {
-        const hasPermission = await requestSheetsPermission();
-        if (hasPermission) {
-            showToast('授權成功！', 'success');
+        if (typeof requestSheetsPermissionManually === 'function') {
+            const hasPermission = await requestSheetsPermissionManually();
+            if (hasPermission) {
+                showToast('授權成功！現在可以使用 Google Sheets 功能', 'success');
+                return true;
+            } else {
+                showToast('授權失敗或被用戶拒絕', 'warning');
+                return false;
+            }
         } else {
-            showToast('授權失敗', 'error');
+            showToast('無法請求權限，請稍後重試', 'error');
+            return false;
         }
     } catch (error) {
         console.error('重新授權失敗:', error);
         showToast('授權失敗: ' + error.message, 'error');
+        return false;
     }
 }
 
@@ -1071,13 +1100,27 @@ async function checkAndSyncFromSheets() {
     }
 }
 
-// 顯示或隱藏同步按鈕
+// 顯示或隱藏同步按鈕和授權按鈕
 function showSyncButton() {
     const syncBtn = document.getElementById('syncBtn');
-    if (syncBtn && window.currentUser && window.SheetsAPI.getSavedSpreadsheetId()) {
+    const authSheetsBtn = document.getElementById('authSheetsBtn');
+    
+    // 檢查是否已登入且有 Google Sheets 權限
+    const hasPermission = window.currentUser && window.currentUser.accessToken;
+    const hasSpreadsheet = window.SheetsAPI && window.SheetsAPI.getSavedSpreadsheetId();
+    
+    if (syncBtn && hasPermission && hasSpreadsheet) {
+        // 有權限且有試算表：顯示同步按鈕，隱藏授權按鈕
         syncBtn.style.display = 'flex';
-    } else if (syncBtn) {
-        syncBtn.style.display = 'none';
+        if (authSheetsBtn) authSheetsBtn.style.display = 'none';
+    } else if (authSheetsBtn && window.currentUser && !hasPermission) {
+        // 已登入但沒有權限：顯示授權按鈕，隱藏同步按鈕
+        authSheetsBtn.style.display = 'flex';
+        if (syncBtn) syncBtn.style.display = 'none';
+    } else {
+        // 其他情況：都隱藏
+        if (syncBtn) syncBtn.style.display = 'none';
+        if (authSheetsBtn) authSheetsBtn.style.display = 'none';
     }
 }
 
