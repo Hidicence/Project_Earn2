@@ -36,6 +36,11 @@
     --bg-secondary: #f8fafc;
     --bg-tertiary: #f1f5f9;
     
+    /* 文字顏色 */
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+    
     /* 間距系統 */
     --space-xs: 0.25rem;
     --space-sm: 0.5rem;
@@ -117,6 +122,298 @@
     
     --font-family: var(--font-family-base);
     --font-size-base: var(--font-size-md);
+}
+
+/* 暗色主題 */
+[data-theme="dark"] {
+    /* 中性色系 - 暗色主題 */
+    --neutral-0: #0f1419;
+    --neutral-50: #1a202c;
+    --neutral-100: #2d3748;
+    --neutral-200: #4a5568;
+    --neutral-300: #718096;
+    --neutral-400: #a0aec0;
+    --neutral-500: #cbd5e0;
+    --neutral-600: #e2e8f0;
+    --neutral-700: #edf2f7;
+    --neutral-800: #f7fafc;
+    --neutral-900: #ffffff;
+    
+    /* 背景色 */
+    --bg-primary: #0f1419;
+    --bg-secondary: #1a202c;
+    --bg-tertiary: #2d3748;
+    
+    /* 文字顏色 */
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;
+    --text-tertiary: #a0aec0;
+    
+    /* Gray色系映射到暗色 */
+    --gray-50: var(--neutral-50);
+    --gray-100: var(--neutral-100);
+    --gray-200: var(--neutral-200);
+    --gray-300: var(--neutral-300);
+    --gray-400: var(--neutral-400);
+    --gray-500: var(--neutral-500);
+    --gray-600: var(--neutral-600);
+    --gray-700: var(--neutral-700);
+    --gray-800: var(--neutral-800);
+    --gray-900: var(--neutral-900);
+}
+
+/* 暗色模式專用樣式 */
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, var(--neutral-100) 0%, var(--neutral-50) 100%);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] section {
+    background: var(--bg-primary);
+    border-color: var(--neutral-200);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] section h2 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .projects-section {
+    background: var(--bg-primary);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .monthly-expenses-section {
+    background: var(--bg-primary);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .projects-table {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .projects-table th {
+    background: var(--neutral-100);
+    color: var(--text-primary);
+    border-bottom-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .projects-table td {
+    border-bottom-color: var(--neutral-200);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .projects-table td:first-child {
+    background: linear-gradient(90deg, var(--bg-primary) 98%, rgba(42, 48, 60, 0.96));
+    box-shadow: 1px 0 0 0 var(--neutral-200);
+}
+
+[data-theme="dark"] .projects-table tbody tr:nth-child(even) {
+    background-color: var(--neutral-50);
+}
+
+[data-theme="dark"] .projects-table tbody tr:hover {
+    background-color: var(--neutral-100);
+}
+
+[data-theme="dark"] .projects-table tbody tr:hover td:first-child {
+    background: linear-gradient(90deg, var(--neutral-100) 98%, var(--neutral-100));
+}
+
+/* 專案名稱暗色主題 */
+[data-theme="dark"] .project-name-col {
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+}
+
+/* 收款列暗色主題 */
+[data-theme="dark"] .payment-col {
+    background-color: var(--neutral-100) !important;
+}
+
+/* 收款複選框暗色主題 */
+[data-theme="dark"] .payment-checkbox {
+    background-color: var(--bg-primary);
+    border-color: var(--neutral-300);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .payment-checkbox:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* 複選框標籤暗色主題 */
+[data-theme="dark"] .checkbox-label {
+    color: var(--text-primary);
+}
+
+/* 外發複選框暗色主題 */
+[data-theme="dark"] .outsourcing-checkbox {
+    background-color: var(--bg-primary);
+    border-color: var(--neutral-300);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .outsourcing-checkbox:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .monthly-expenses {
+    background: var(--bg-primary);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .expense-items {
+    background: var(--neutral-100);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .expense-item {
+    background: var(--bg-primary);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .expense-item label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .monthly-input {
+    background: var(--bg-primary);
+    border-color: var(--neutral-300);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .monthly-input:focus {
+    border-color: var(--brand-primary);
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .monthly-summary {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--neutral-100) 100%);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .summary-item {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .summary-item:hover {
+    background: var(--neutral-100);
+}
+
+[data-theme="dark"] .summary-item label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .summary-item span {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .summary-item.current-loss {
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .summary-item.monthly-expenses {
+    background-color: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .summary-item.monthly-income {
+    background-color: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .summary-item.adjusted-profit {
+    background-color: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .month-tabs {
+    background: var(--bg-primary);
+    border-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .month-tab {
+    background: var(--neutral-100);
+    border-color: var(--neutral-200);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .month-tab.active {
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    color: white;
+}
+
+[data-theme="dark"] .month-tab .delete-month {
+    background: var(--brand-error);
+    color: white;
+}
+
+[data-theme="dark"] .month-tab .delete-month:hover {
+    background: var(--accent-light);
+}
+
+[data-theme="dark"] .month-tab[data-has-data="true"] {
+    border-color: var(--brand-success);
+    background: linear-gradient(135deg, var(--bg-primary), rgba(16, 185, 129, 0.1));
+}
+
+[data-theme="dark"] .month-tab[data-has-data="true"]:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.15));
+}
+
+[data-theme="dark"] .month-name {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .project-count {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .project-count.empty {
+    color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .table-container {
+    border-color: var(--neutral-200);
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .search-input {
+    background: var(--bg-primary);
+    border-color: var(--neutral-300);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .search-input:focus {
+    background: var(--bg-primary);
+    border-color: var(--brand-primary);
+}
+
+[data-theme="dark"] .filter-select {
+    background: var(--bg-primary);
+    border-color: var(--neutral-300);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-select:focus {
+    border-color: var(--brand-primary);
+}
+
+[data-theme="dark"] .table-input {
+    background: var(--bg-primary);
+    border-color: var(--neutral-300);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .table-input:focus {
+    background: var(--bg-primary);
+    border-color: var(--brand-primary);
+    color: var(--text-primary);
 }
 
 body {
@@ -436,25 +733,30 @@ header h1 {
 }
 
 .month-tabs-container {
-    display: flex;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-md);
     flex: 1;
+    align-items: stretch;
+    max-width: 100%;
 }
 
 .month-tab {
     background: var(--gray-100);
     border: 2px solid var(--gray-200);
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-lg);
     cursor: pointer;
     transition: all var(--transition-normal);
     font-weight: 600;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-sm);
     position: relative;
     overflow: hidden;
+    min-height: 44px;
+    text-align: left;
 }
 
 .month-tab::before {
@@ -478,6 +780,25 @@ header h1 {
     color: white;
     border-color: var(--primary-color);
     box-shadow: var(--shadow-md);
+}
+
+.month-tab[data-has-data="true"] {
+    border-color: var(--brand-success);
+    background: linear-gradient(135deg, var(--neutral-0), #f0fdf4);
+    box-shadow: var(--shadow-sm);
+}
+
+.month-tab[data-has-data="true"]:hover {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.month-tab:not([data-has-data="true"]) .project-count.empty {
+    background: var(--neutral-100);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
 }
 
 .month-tab:hover {
@@ -504,6 +825,33 @@ header h1 {
 .month-tab .delete-month:hover {
     opacity: 1;
     transform: scale(1.1);
+}
+
+.month-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    flex: 1;
+    min-width: 0;
+}
+
+.month-name {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--neutral-800);
+    line-height: 1.2;
+}
+
+.project-count {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--neutral-600);
+    line-height: 1;
+}
+
+.project-count.empty {
+    color: var(--neutral-400);
+    font-style: italic;
 }
 
 /* =====================================
@@ -2256,7 +2604,17 @@ section h2::before {
     }
 
     .month-tabs-container {
-        justify-content: center;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: var(--spacing-sm);
+    }
+    
+    .month-tab {
+        min-height: 56px;
+        padding: var(--spacing-sm);
+    }
+    
+    .month-name {
+        font-size: var(--font-size-xs);
     }
 
     .project-controls {
