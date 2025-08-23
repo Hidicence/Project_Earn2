@@ -9,7 +9,7 @@ let monthlyExpenses = {};
 // currentUser 和 isLocalMode 在 auth.js 中已聲明
 
 // 初始化應用
-function initializeAppAfterLogin() {
+async function initializeAppAfterLogin() {
     console.log('用戶已登入，初始化應用...');
     
     // 初始化主題
@@ -62,7 +62,7 @@ function initializeAppAfterLogin() {
 // 刪除與 auth.js 重複的 startLocalMode，改由 auth.js 負責
 
 // 本地模式初始化
-function initializeLocalMode() {
+async function initializeLocalMode() {
     console.log('使用本地模式初始化...');
     
     // 立即檢查按鈕是否存在

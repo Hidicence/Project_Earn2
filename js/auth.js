@@ -21,7 +21,7 @@ function initAuth() {
 }
 
 // Google 登入回調函數
-function handleCredentialResponse(response) {
+async function handleCredentialResponse(response) {
     try {
         // 解析 JWT token
         const responsePayload = decodeJwtResponse(response.credential);
@@ -35,8 +35,11 @@ function handleCredentialResponse(response) {
             loginTime: new Date().toISOString()
         };
         
-        // 獲取 Google Sheets API 權限
-        await requestSheetsPermission();
+        // 嘗試獲取 Google Sheets API 權限（非阻塞）
+        requestSheetsPermission().catch(error => {
+            console.warn('Google Sheets API 權限獲取失敗:', error);
+            // 不阻塞主要登入流程
+        });
         
         // 保存用戶資訊到 localStorage
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -106,7 +109,9 @@ function showSignedInState() {
     
     // 初始化應用數據
     if (typeof initializeAppAfterLogin === 'function') {
-        initializeAppAfterLogin();
+        initializeAppAfterLogin().catch(error => {
+            console.error('初始化應用失敗:', error);
+        });
     }
 }
 
@@ -118,9 +123,13 @@ function startLocalMode() {
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     showSignedInState();
     if (typeof initializeLocalMode === 'function') {
-        initializeLocalMode();
+        initializeLocalMode().catch(error => {
+            console.error('初始化本地模式失敗:', error);
+        });
     } else if (typeof initializeAppAfterLogin === 'function') {
-        initializeAppAfterLogin();
+        initializeAppAfterLogin().catch(error => {
+            console.error('初始化應用失敗:', error);
+        });
     }
     console.log('已切換到本地模式');
 }
@@ -160,13 +169,18 @@ function isLoggedIn() {
 async function requestSheetsPermission() {
     try {
         if (!window.gapi) {
-            console.warn('Google API 尚未載入，跳過權限請求');
-            return false;
+            console.warn('Google API 尚未載入，延遲請求權限');
+            // 等待 Google API 載入
+            await waitForGoogleAPI();
         }
         
         // 載入 OAuth 模塊
-        await new Promise((resolve) => {
-            gapi.load('auth2', resolve);
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('載入 OAuth 模塊超時')), 10000);
+            gapi.load('auth2', () => {
+                clearTimeout(timeout);
+                resolve();
+            });
         });
         
         // 初始化 OAuth
@@ -174,19 +188,23 @@ async function requestSheetsPermission() {
             client_id: '343933262520-n68g14qkgo400741vvjtk2o1dbohfnq4.apps.googleusercontent.com'
         });
         
-        // 請求權限
+        // 靜默嘗試獲取權限（避免彈窗）
         const user = await authInstance.signIn({
-            scope: 'https://www.googleapis.com/auth/spreadsheets'
-        });
+            scope: 'https://www.googleapis.com/auth/spreadsheets',
+            prompt: 'none'  // 靜默授權
+        }).catch(() => null);
         
-        // 獲取 access token
-        const authResponse = user.getAuthResponse();
-        if (authResponse && authResponse.access_token) {
-            currentUser.accessToken = authResponse.access_token;
-            console.log('Google Sheets API 權限獲取成功');
-            return true;
+        if (user) {
+            // 獲取 access token
+            const authResponse = user.getAuthResponse();
+            if (authResponse && authResponse.access_token) {
+                currentUser.accessToken = authResponse.access_token;
+                console.log('Google Sheets API 權限獲取成功');
+                return true;
+            }
         }
         
+        console.log('Google Sheets API 權限獲取跳過（需要用戶手動授權）');
         return false;
         
     } catch (error) {
@@ -195,10 +213,32 @@ async function requestSheetsPermission() {
     }
 }
 
+// 等待 Google API 載入
+function waitForGoogleAPI(maxWait = 10000) {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        
+        function check() {
+            if (window.gapi) {
+                resolve();
+            } else if (Date.now() - startTime > maxWait) {
+                reject(new Error('Google API 載入超時'));
+            } else {
+                setTimeout(check, 100);
+            }
+        }
+        
+        check();
+    });
+}
+
 // 檢查是否有 Sheets API 權限
 function hasSheetsPermission() {
     return currentUser && currentUser.accessToken;
 }
+
+// 將函數導出到全域，供 Google OAuth 調用
+window.handleCredentialResponse = handleCredentialResponse;
 
 // 頁面載入時初始化認證
 document.addEventListener('DOMContentLoaded', function() {
